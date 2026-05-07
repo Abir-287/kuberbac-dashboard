@@ -1,0 +1,24 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Hexagon Nodes -->
+  <path d="M100 15L175 55V145L100 185L25 145V55L100 15Z" stroke="#5E22E6" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="100" cy="15" r="8" fill="#3B82F6"/>
+  <circle cx="175" cy="55" r="8" fill="#3B82F6"/>
+  <circle cx="175" cy="145" r="8" fill="#3B82F6"/>
+  <circle cx="100" cy="185" r="8" fill="#3B82F6"/>
+  <circle cx="25" cy="145" r="8" fill="#3B82F6"/>
+  <circle cx="25" cy="55" r="8" fill="#3B82F6"/>
+
+  <!-- 3D Cube -->
+  <path d="M100 45L150 72V128L100 155L50 128V72L100 45Z" fill="#7C3AED"/>
+  <path d="M100 45L150 72L100 100L50 72L100 45Z" fill="#8B5CF6"/>
+  <path d="M50 72L100 100V155L50 128V72Z" fill="#6D28D9"/>
+  
+  <!-- Shield Background -->
+  <path d="M165 110C165 110 180 115 180 135C180 160 165 185 145 195C125 185 110 160 110 135C110 115 125 110 125 110L145 105L165 110Z" fill="#4C1D95" stroke="#EDE9FE" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M160 115C160 115 170 118 170 135C170 155 160 175 145 185C130 175 120 155 120 135C120 118 130 115 130 115L145 110L160 115Z" fill="#6D28D9"/>
+
+  <!-- Padlock in Shield -->
+  <rect x="135" y="145" width="20" height="15" rx="3" fill="white"/>
+  <path d="M138 145V138C138 133 152 133 152 138V145" stroke="white" stroke-width="3" fill="none"/>
+  <circle cx="145" cy="152" r="2.5" fill="#6D28D9"/>
+</svg>
