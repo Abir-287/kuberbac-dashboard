@@ -15,6 +15,11 @@ spec:
       labels:
         app: backend
     spec:
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "dashboard"
+        effect: "NoSchedule"
       nodeSelector:
         kubernetes.io/hostname: worker1
       containers:
