@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-sa
+  namespace: rbac-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backend-sa-admin-binding
+subjects:
+  - kind: ServiceAccount
+    name: backend-sa
+    namespace: rbac-dashboard
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin   # Full permissions to manage RBAC as requested
+  apiGroup: rbac.authorization.k8s.io
