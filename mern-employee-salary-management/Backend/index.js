@@ -43,6 +43,10 @@ app.use(session({
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://localhost:3000',
+    'https://app.abir.local',      // cluster Ingress domain
 ];
 
 app.use(cors({
@@ -65,6 +69,9 @@ app.use(express.static("public"));
 
 app.use(UserRoute);
 app.use(AuthRoute);
+
+// Kubernetes health check endpoint
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 
 // store.sync();
 

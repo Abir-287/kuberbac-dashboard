@@ -42,7 +42,7 @@ export const getDataPegawai = async (req, res) => {
     try {
         const response = await DataPegawai.findAll({
             attributes: [
-                'id', 'nik', 'nama_pegawai',
+                'id', 'nik', 'nama_pegawai', 'username',
                 'jenis_kelamin', 'jabatan', 'tanggal_masuk',
                 'status', 'photo', 'hak_akses', 'email', 'groups'
             ]
@@ -86,7 +86,7 @@ export const getDataPegawaiByNik = async (req, res) => {
     try {
         const response = await DataPegawai.findOne({
             attributes: [
-                'id', 'nik', 'nama_pegawai',
+                'id', 'nik', 'nama_pegawai', 'username',
                 'jenis_kelamin', 'jabatan', 'tanggal_masuk',
                 'status', 'photo', 'hak_akses', 'email', 'groups'
             ],
@@ -109,7 +109,7 @@ export const getDataPegawaiByName = async (req, res) => {
     try {
         const response = await DataPegawai.findOne({
             attributes: [
-                'id', 'nik', 'nama_pegawai',
+                'id', 'nik', 'nama_pegawai', 'username',
                 'jenis_kelamin', 'jabatan', 'tanggal_masuk',
                 'status', 'photo', 'hak_akses', 'email', 'groups'
             ],

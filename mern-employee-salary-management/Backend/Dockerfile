@@ -1,20 +1,20 @@
-# Use official Node.js image
+# Production-ready backend image
 FROM node:18-alpine
 
-# Set working directory
+# Install dumb-init for proper signal handling in containers
+RUN apk add --no-cache dumb-init
+
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy and install deps first (layer cache optimization)
 COPY package*.json ./
+RUN npm ci --only=production
 
-# Install dependencies
-RUN npm install --production
-
-# Copy the rest of the application code
+# Copy application source (excluding node_modules, .env, test files)
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 5000
 
-# Command to run the application
-CMD ["npm", "start"]
+# Use dumb-init to handle PID 1 signals properly
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "index.js"]

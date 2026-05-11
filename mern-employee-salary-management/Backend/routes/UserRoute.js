@@ -71,7 +71,8 @@ import {
     deleteRoleBinding,
     getAvailableRoles,
     createRole,
-    getUserPermissions
+    getUserPermissions,
+    getNamespaces
 } from '../controllers/RbacController.js';
 
 const router = express.Router();
@@ -136,6 +137,7 @@ router.post('/rbac/bindings/:namespace', verifyUser, adminOnly, createRoleBindin
 router.delete('/rbac/bindings/:namespace/:name', verifyUser, adminOnly, deleteRoleBinding);
 router.post('/rbac/custom-roles/:namespace', verifyUser, adminOnly, createRole);
 router.get('/rbac/user-permissions/:username', verifyUser, getUserPermissions);
+router.get('/rbac/namespaces', verifyUser, adminOnly, getNamespaces);
 
 /* ==== Ubah Password ==== */
 router.patch('/change_password', verifyUser, changePassword);

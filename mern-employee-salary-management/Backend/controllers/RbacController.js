@@ -1,4 +1,4 @@
-import { rbacApi } from "../config/K8sConfig.js";
+import { rbacApi, k8sApi } from "../config/K8sConfig.js";
 import DataPegawai from "../models/DataPegawaiModel.js";
 
 // List RoleBindings in a namespace
@@ -115,17 +115,43 @@ export const getUserPermissions = async (req, res) => {
         const userEmail = user?.email || "";
         const searchTerms = [username, userEmail].filter(t => t !== "");
 
-        const response = await rbacApi.listRoleBindingForAllNamespaces();
-        const userPermissions = response.items.filter(rb => 
+        // Fetch RoleBindings
+        const rbResponse = await rbacApi.listRoleBindingForAllNamespaces();
+        const roleBindings = rbResponse.items.filter(rb => 
             rb.subjects && rb.subjects.some(s => searchTerms.includes(s.name))
         ).map(rb => ({
             namespace: rb.metadata.namespace,
             roleName: rb.roleRef.name,
             bindingName: rb.metadata.name,
-            kind: rb.roleRef.kind
+            kind: rb.roleRef.kind,
+            type: 'RoleBinding'
         }));
-        res.status(200).json(userPermissions);
+
+        // Fetch ClusterRoleBindings
+        const crbResponse = await rbacApi.listClusterRoleBinding();
+        const clusterRoleBindings = crbResponse.items.filter(crb =>
+            crb.subjects && crb.subjects.some(s => searchTerms.includes(s.name))
+        ).map(crb => ({
+            namespace: "All Namespaces (Cluster-wide)",
+            roleName: crb.roleRef.name,
+            bindingName: crb.metadata.name,
+            kind: crb.roleRef.kind,
+            type: 'ClusterRoleBinding'
+        }));
+
+        res.status(200).json([...roleBindings, ...clusterRoleBindings]);
     } catch (error) {
         res.status(500).json({ msg: error.response?.body?.message || error.message });
+    }
+};
+
+// Get all namespaces
+export const getNamespaces = async (req, res) => {
+    try {
+        const response = await k8sApi.listNamespace();
+        const namespaces = response.items.map(ns => ns.metadata.name);
+        res.status(200).json(namespaces);
+    } catch (error) {
+        res.status(500).json({ msg: error.message });
     }
 };

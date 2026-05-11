@@ -35,7 +35,8 @@ import {
   DataGajiPegawai,
   UbahPasswordPegawai,
   DataPotongan,
-  ArgoCD
+  ArgoCD,
+  UserPermissions
 } from '../../pages'
 
 const AppRoutes = () => {
@@ -61,6 +62,10 @@ const AppRoutes = () => {
       <Route
         path='/users-data/form-data-pegawai/edit/:id'
         element={<FormEditDataPegawai />}
+      />
+      <Route
+        path='/users-data/permissions/:username'
+        element={<UserPermissions />}
       />
       <Route
         path='/namespaces-data'

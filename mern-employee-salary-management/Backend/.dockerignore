@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log*
+.env
+*.log
+backend.log
+scratch/
+request_test/
+*.py
+*.md
+.git
+Dockerfile

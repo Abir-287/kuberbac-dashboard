@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: rbac-dashboard
+data:
+  APP_PORT: "5000"
+  DB_HOST: "mysql-service.rbac-dashboard.svc.cluster.local"
+  DB_PORT: "3306"
+  DB_NAME: "db_penggajian3"
+  DB_USER: "cluster_admin"
+  DEX_ISSUER: "https://192.168.122.23:5556"
+  KEYCLOAK_URL: "https://192.168.122.235:8443"
+  KUBE_API_URL: "https://192.168.122.220:6443"
+  GITHUB_REPO: "Abir-287/kuberbac-dashboard"
+  GITHUB_RBAC_PATH: "apps/dev/rbac"
+  NODE_TLS_REJECT_UNAUTHORIZED: "0"

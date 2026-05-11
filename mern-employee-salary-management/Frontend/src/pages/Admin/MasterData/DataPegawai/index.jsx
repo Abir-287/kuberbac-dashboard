@@ -203,12 +203,16 @@ const DataPegawai = () => {
                         <tbody>
                             {filteredDataPegawai.slice(startIndex, endIndex).map((data, index) => {
                                 return (
-                                    <tr key={data.id}>
+                                    <tr 
+                                        key={data.id} 
+                                        onClick={() => navigate(`/users-data/permissions/${data.username}`)}
+                                        className="cursor-pointer hover:bg-gray-2 dark:hover:bg-meta-4 transition"
+                                    >
                                         <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                                             <p className="text-black dark:text-white text-center">{startIndex + index + 1}</p>
                                         </td>
                                         <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
-                                            <p className="text-black dark:text-white">{data.nama_pegawai}</p>
+                                            <p className="text-black dark:text-white font-medium">{data.nama_pegawai}</p>
                                         </td>
                                         <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                                             <p className="text-black dark:text-white">{data.email || '-'}</p>
@@ -221,7 +225,7 @@ const DataPegawai = () => {
                                                 {data.hak_akses === 'admin' ? 'Admin' : 'Limited'}
                                             </span>
                                         </td>
-                                        <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
+                                        <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center space-x-3.5">
                                                 <Link
                                                     to={`/users-data/form-data-pegawai/edit/${data.id}`}
@@ -229,7 +233,10 @@ const DataPegawai = () => {
                                                     <FaRegEdit className="text-primary text-xl hover:text-black dark:hover:text-white" />
                                                 </Link>
                                                 <button
-                                                    onClick={() => onDeletePegawai(data.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeletePegawai(data.id);
+                                                    }}
                                                     className="hover:text-black">
                                                     <BsTrash3 className="text-danger text-xl hover:text-black dark:hover:text-white" />
                                                 </button>

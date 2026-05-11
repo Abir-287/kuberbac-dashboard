@@ -22,7 +22,7 @@ export const getDataJabatan = async (req, res) => {
 // method untuk menampilkan data namespace by ID (Name)
 export const getDataJabatanByID = async (req, res) => {
     try {
-        const ns = await k8sApi.readNamespace(req.params.id);
+        const ns = await k8sApi.readNamespace({ name: req.params.id });
         res.status(200).json({
             id: ns.metadata.name,
             nama_jabatan: ns.metadata.name,

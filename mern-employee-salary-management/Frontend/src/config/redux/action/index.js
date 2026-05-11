@@ -9,3 +9,4 @@ export * from './laporanAbsensiAction';
 export * from './laporanGajiAction';
 export * from './slipGajiAction';
 export * from './ubahPasswordAction';
+export * from './rbacAction';

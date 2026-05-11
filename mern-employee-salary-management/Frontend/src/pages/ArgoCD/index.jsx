@@ -11,9 +11,10 @@ const ArgoCD = () => {
     const navigate = useNavigate();
     const { isError } = useSelector((state) => state.auth);
     const [isLoading, setIsLoading] = useState(true);
-    
-    // Placeholder ArgoCD URL - User can change this to their actual ArgoCD instance
-    const argoCDUrl = "https://argocd.example.com"; 
+
+    // Use the Ingress hostname (MetalLB + NGINX Ingress)
+    const argoCDUrl = "https://argocd.abir.local";
+    const githubRepoUrl = "https://github.com/Abir-287/kuberbac-dashboard";
 
     useEffect(() => {
         dispatch(getMe());
@@ -36,7 +37,7 @@ const ArgoCD = () => {
     return (
         <Layout>
             <Breadcrumb pageName="ArgoCD Interface" />
-            
+
             <div className="flex flex-col gap-5 md:gap-7 2xl:gap-10">
                 <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark flex justify-between items-center">
@@ -44,16 +45,16 @@ const ArgoCD = () => {
                             Continuous Delivery Management
                         </h3>
                         <div className="flex gap-3">
-                            <button 
+                            <button
                                 onClick={handleRefresh}
                                 className="inline-flex items-center justify-center gap-2.5 rounded-md border border-primary py-2 px-4 text-center font-medium text-primary hover:bg-opacity-90 lg:px-6 xl:px-8"
                             >
                                 <FiRefreshCw className={isLoading ? "animate-spin" : ""} />
                                 Refresh
                             </button>
-                            <a 
-                                href={argoCDUrl} 
-                                target="_blank" 
+                            <a
+                                href={argoCDUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary py-2 px-4 text-center font-medium text-white hover:bg-opacity-90 lg:px-6 xl:px-8"
                             >
@@ -62,7 +63,7 @@ const ArgoCD = () => {
                             </a>
                         </div>
                     </div>
-                    
+
                     <div className="p-4 md:p-6 xl:p-9">
                         <div className="relative w-full overflow-hidden rounded-xl border border-stroke dark:border-strokedark bg-gray-100 dark:bg-meta-4" style={{ height: 'calc(100vh - 350px)' }}>
                             {isLoading && (
@@ -70,18 +71,19 @@ const ArgoCD = () => {
                                     <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
                                 </div>
                             )}
-                            <iframe 
+                            <iframe
                                 id="argocd-iframe"
-                                src={argoCDUrl} 
+                                src={argoCDUrl}
                                 title="ArgoCD Interface"
                                 className="w-full h-full border-0"
                                 onLoad={() => setIsLoading(false)}
                                 onError={() => setIsLoading(false)}
                             />
                         </div>
-                        
+
                         <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 italic">
-                            Note: If the interface does not load, please ensure that ArgoCD is configured to allow embedding in iframes or use the "Open Externally" button.
+                            <p>ArgoCD has been configured for seamless access within this dashboard.</p>
+                            <p className="mt-1">If the interface does not load, click <strong>"Open Externally"</strong> to check the connection.</p>
                         </div>
                     </div>
                 </div>

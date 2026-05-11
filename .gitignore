@@ -1,0 +1,9 @@
+# Secrets — NEVER commit real values
+apps/dev/backend/secret.yaml
+apps/dev/mysql/secret.yaml
+
+# Scratch files
+mern-employee-salary-management/scratch/
+
+# Logs
+*.log
