@@ -1,15 +1,12 @@
 import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getDataKehadiran } from '../../../../config/redux/action';
+import { useDispatch } from 'react-redux';
 import { AiFillDatabase } from 'react-icons/ai'
 
 const CardFour = () => {
   const dispatch = useDispatch();
-  const { dataKehadiran } = useSelector((state) => state.dataKehadiran);
-  const jumlahDataKehadiran = dataKehadiran.length;
 
   useEffect(() => {
-    dispatch(getDataKehadiran());
+    // Static cluster info
   }, [dispatch]);
 
   return (

@@ -1,15 +1,12 @@
 import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getDataJabatan } from '../../../../config/redux/action';
+import { useDispatch } from 'react-redux';
 import { FaUserTie } from 'react-icons/fa'
 
 const CardThree = () => {
   const dispatch = useDispatch();
-  const { dataJabatan } = useSelector((state) => state.dataJabatan);
-  const jumlahDataJabatan = dataJabatan.length;
 
   useEffect(() => {
-    dispatch(getDataJabatan());
+    // We could fetch actual RoleBindings count here if needed
   }, [dispatch]);
 
   return (
