@@ -28,8 +28,8 @@ spec:
                 port:
                   number: 5000
           # /* → frontend-service:80
-          - path: /
-            pathType: Prefix
+          - path: /()(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: frontend-service
