@@ -11,6 +11,9 @@ spec:
     repoURL: https://github.com/Abir-287/kuberbac-dashboard.git
     targetRevision: HEAD
     path: apps/dev
+    directory:
+      recurse: true
+
   destination:
     server: https://kubernetes.default.svc
     namespace: rbac-dashboard
