@@ -42,3 +42,19 @@ export const logoutUser = createAsyncThunk("user/logoutUser", async () => {
     }
   }
 });
+
+export const changePassword = (password, confPassword) => {
+  return async () => {
+    try {
+      const response = await axios.post("/api/change-password", {
+        password: password,
+        confPassword: confPassword
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw error;
+      }
+    }
+  };
+};
