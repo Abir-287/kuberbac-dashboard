@@ -45,7 +45,7 @@ const NamespacePods = () => {
         const fetchPods = async () => {
             setLoading(true);
             try {
-                const res = await axios.get(`http://localhost:5000/namespaces/${name}/pods`);
+                const res = await axios.get(`/api/namespaces/${name}/pods`);
                 setPods(res.data);
             } catch (e) {
                 setError(e.response?.data?.msg || 'Failed to fetch pods');

@@ -33,7 +33,7 @@ const FormEditDataPegawai = () => {
             };
 
             // Using PATCH as defined in the backend routes
-            const response = await axios.patch(`http://localhost:5000/data_pegawai/${id}`, data);
+            const response = await axios.patch(`/api/data_pegawai/${id}`, data);
             Swal.fire({
                 icon: 'success',
                 title: 'Success',
@@ -54,7 +54,7 @@ const FormEditDataPegawai = () => {
     useEffect(() => {
         const getUserById = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/data_pegawai/id/${id}`);
+                const response = await axios.get(`/api/data_pegawai/id/${id}`);
                 const data = response.data;
                 setNamaPegawai(data.nama_pegawai);
                 setUsername(data.username);

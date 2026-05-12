@@ -18,7 +18,7 @@ const FormEditDataJabatan = () => {
     useEffect(() => {
         const getNamespace = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/data_jabatan/${id}`, { withCredentials: true });
+                const response = await axios.get(`/api/data_jabatan/${id}`, { withCredentials: true });
                 setNsData(response.data);
             } catch (error) {
                 console.error("Error fetching namespace:", error);

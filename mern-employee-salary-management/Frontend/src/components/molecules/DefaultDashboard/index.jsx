@@ -13,7 +13,7 @@ const DefaultDashboard = () => {
         const getDataPegawai = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:5000/data_pegawai/name/${user.nama_pegawai}`
+                    `/api/data_pegawai/name/${user.nama_pegawai}`
                 );
                 const data = response.data;
                 setDataPegawai(data);

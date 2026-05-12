@@ -12,7 +12,7 @@ import {
     DELETE_ROLE_BINDING_FAILURE
 } from './rbacActionTypes';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = '/api';
 
 export const getUserPermissions = (username) => {
     return async (dispatch) => {

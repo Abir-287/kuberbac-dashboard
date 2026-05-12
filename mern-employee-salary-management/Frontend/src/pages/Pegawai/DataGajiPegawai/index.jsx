@@ -65,7 +65,7 @@ const DataGajiPegawai = () => {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/rbac/user-permissions/${username}`);
+        const response = await axios.get(`/api/rbac/user-permissions/${username}`);
         setUserPermissions(response.data);
       } catch (error) {
         console.log("Error fetching permissions:", error);
