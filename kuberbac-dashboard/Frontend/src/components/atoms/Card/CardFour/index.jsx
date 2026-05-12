@@ -1,14 +1,7 @@
-import React, { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import React from 'react';
 import { AiFillDatabase } from 'react-icons/ai'
 
 const CardFour = () => {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    // Static cluster info
-  }, [dispatch]);
-
   return (
     <div className='rounded-sm border border-stroke bg-white py-6 px-7.5 shadow-default dark:border-strokedark dark:bg-boxdark'>
       <div className='flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4'>
