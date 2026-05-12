@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'mern-employee-salary-management/Backend/**'
-      - 'mern-employee-salary-management/Frontend/**'
+      - 'kuberbac-dashboard/Backend/**'
+      - 'kuberbac-dashboard/Frontend/**'
 
 env:
   REGISTRY: ghcr.io
@@ -39,7 +39,7 @@ jobs:
       - name: Build and Push Backend
         uses: docker/build-push-action@v5
         with:
-          context: ./mern-employee-salary-management/Backend
+          context: ./kuberbac-dashboard/Backend
           push: true
           tags: |
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
@@ -51,7 +51,7 @@ jobs:
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./mern-employee-salary-management/Frontend
+          context: ./kuberbac-dashboard/Frontend
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
