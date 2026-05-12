@@ -13,5 +13,6 @@ data:
   KEYCLOAK_URL: "https://192.168.122.235:8443"
   KUBE_API_URL: "https://192.168.122.220:6443"
   GITHUB_REPO: "Abir-287/kuberbac-dashboard"
+  GITHUB_USER: "Abir-287"
   GITHUB_RBAC_PATH: "apps/dev/rbac"
   NODE_TLS_REJECT_UNAUTHORIZED: "0"

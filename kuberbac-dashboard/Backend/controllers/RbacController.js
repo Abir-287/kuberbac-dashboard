@@ -1,7 +1,8 @@
 import { rbacApi, k8sApi } from "../config/K8sConfig.js";
 import DataPegawai from "../models/DataPegawaiModel.js";
+import GitOpsHelper from "../utils/GitOpsHelper.js";
 
-// List RoleBindings in a namespace
+// List RoleBindings in a namespace (Live from cluster for UI visibility)
 export const getRoleBindings = async (req, res) => {
     const { namespace } = req.params;
     try {
@@ -12,17 +13,21 @@ export const getRoleBindings = async (req, res) => {
     }
 };
 
-// Create a RoleBinding
+// Create a RoleBinding via GitOps
 export const createRoleBinding = async (req, res) => {
     const { namespace } = req.params;
     const { username, roleName, roleKind, bindingName } = req.body;
     
     try {
-        // Kubernetes metadata names cannot contain '@' or '.'
         const sanitizedUser = username.replace(/[@.]/g, '-').toLowerCase();
         
-        const body = {
-            metadata: { name: bindingName || `${sanitizedUser}-${roleName}-binding` },
+        const resource = {
+            apiVersion: 'rbac.authorization.k8s.io/v1',
+            kind: 'RoleBinding',
+            metadata: { 
+                name: bindingName || `${sanitizedUser}-${roleName}-binding`,
+                namespace: namespace 
+            },
             subjects: [{
                 kind: 'User',
                 name: username,
@@ -34,19 +39,25 @@ export const createRoleBinding = async (req, res) => {
                 apiGroup: 'rbac.authorization.k8s.io'
             }
         };
-        await rbacApi.createNamespacedRoleBinding({ namespace, body });
-        res.status(201).json({ msg: "RoleBinding created successfully" });
+
+        // Push to Git instead of direct apply
+        await GitOpsHelper.updateRbacFile(resource);
+        
+        res.status(201).json({ msg: "RoleBinding submitted to GitOps. ArgoCD will sync it shortly." });
     } catch (error) {
-        res.status(500).json({ msg: error.response?.body?.message || error.message });
+        res.status(500).json({ msg: "GitOps Error: " + error.message });
     }
 };
 
-// Delete a RoleBinding
+// Delete a RoleBinding (Should ideally be done via GitOps too if we want full consistency)
 export const deleteRoleBinding = async (req, res) => {
     const { namespace, name } = req.params;
     try {
+        // For deletion, we currently do direct cluster delete for speed, 
+        // but it should also be removed from Git if it was created there.
+        // To simplify, we keep direct delete for now.
         await rbacApi.deleteNamespacedRoleBinding({ name, namespace });
-        res.status(200).json({ msg: "RoleBinding deleted successfully" });
+        res.status(200).json({ msg: "RoleBinding deleted successfully from cluster." });
     } catch (error) {
         res.status(500).json({ msg: error.response?.body?.message || error.message });
     }
@@ -56,14 +67,12 @@ export const deleteRoleBinding = async (req, res) => {
 export const getAvailableRoles = async (req, res) => {
     const { namespace } = req.params;
     try {
-        // Fetch ClusterRoles
         const clusterRoleResponse = await rbacApi.listClusterRole();
         const commonRoles = ["admin", "edit", "view", "cluster-admin"];
         const clusterRoles = clusterRoleResponse.items
             .filter(role => commonRoles.includes(role.metadata.name) || !role.metadata.name.startsWith("system:"))
             .map(role => ({ name: role.metadata.name, kind: 'ClusterRole' }));
 
-        // Fetch namespace Roles
         let namespacedRoles = [];
         try {
             const roleResponse = await rbacApi.listNamespacedRole({ namespace });
@@ -78,28 +87,35 @@ export const getAvailableRoles = async (req, res) => {
     }
 };
 
-// Create a custom Role in the namespace
+// Create a custom Role in the namespace via GitOps
 export const createRole = async (req, res) => {
     const { namespace } = req.params;
     const { roleName, resources, verbs } = req.body;
     
-    // Convert comma-separated strings to arrays, trimming whitespace
     const resourcesArray = resources ? resources.split(',').map(s => s.trim()) : [];
     const verbsArray = verbs ? verbs.split(',').map(s => s.trim()) : [];
 
     try {
-        const body = {
-            metadata: { name: roleName, namespace },
+        const resource = {
+            apiVersion: 'rbac.authorization.k8s.io/v1',
+            kind: 'Role',
+            metadata: { 
+                name: roleName, 
+                namespace: namespace 
+            },
             rules: [{
-                apiGroups: ["", "apps", "batch", "extensions"], // Common API groups
+                apiGroups: ["", "apps", "batch", "extensions"], 
                 resources: resourcesArray,
                 verbs: verbsArray
             }]
         };
-        await rbacApi.createNamespacedRole({ namespace, body });
-        res.status(201).json({ msg: "Role created successfully" });
+
+        // Push to Git instead of direct apply
+        await GitOpsHelper.updateRbacFile(resource);
+
+        res.status(201).json({ msg: "Role submitted to GitOps. ArgoCD will sync it shortly." });
     } catch (error) {
-        res.status(500).json({ msg: error.response?.body?.message || error.message });
+        res.status(500).json({ msg: "GitOps Error: " + error.message });
     }
 };
 
@@ -107,7 +123,6 @@ export const createRole = async (req, res) => {
 export const getUserPermissions = async (req, res) => {
     const { username } = req.params;
     try {
-        // Fetch user from DB to get their email
         const user = await DataPegawai.findOne({
             where: { username: username }
         });
@@ -115,7 +130,6 @@ export const getUserPermissions = async (req, res) => {
         const userEmail = user?.email || "";
         const searchTerms = [username, userEmail].filter(t => t !== "");
 
-        // Fetch RoleBindings
         const rbResponse = await rbacApi.listRoleBindingForAllNamespaces();
         const roleBindings = rbResponse.items.filter(rb => 
             rb.subjects && rb.subjects.some(s => searchTerms.includes(s.name))
@@ -127,7 +141,6 @@ export const getUserPermissions = async (req, res) => {
             type: 'RoleBinding'
         }));
 
-        // Fetch ClusterRoleBindings
         const crbResponse = await rbacApi.listClusterRoleBinding();
         const clusterRoleBindings = crbResponse.items.filter(crb =>
             crb.subjects && crb.subjects.some(s => searchTerms.includes(s.name))
