@@ -49,17 +49,15 @@ export const createRoleBinding = async (req, res) => {
     }
 };
 
-// Delete a RoleBinding (Should ideally be done via GitOps too if we want full consistency)
+// Delete a RoleBinding via GitOps
 export const deleteRoleBinding = async (req, res) => {
     const { namespace, name } = req.params;
     try {
-        // For deletion, we currently do direct cluster delete for speed, 
-        // but it should also be removed from Git if it was created there.
-        // To simplify, we keep direct delete for now.
-        await rbacApi.deleteNamespacedRoleBinding({ name, namespace });
-        res.status(200).json({ msg: "RoleBinding deleted successfully from cluster." });
+        // Pure GitOps: Only update GitHub, let ArgoCD handle cluster deletion
+        await GitOpsHelper.deleteRbacResource('RoleBinding', name, namespace);
+        res.status(200).json({ msg: "RoleBinding deletion submitted to GitOps. ArgoCD will sync it shortly." });
     } catch (error) {
-        res.status(500).json({ msg: error.response?.body?.message || error.message });
+        res.status(500).json({ msg: "GitOps Delete Error: " + error.message });
     }
 };
 

@@ -86,6 +86,59 @@ class GitOpsHelper {
                 execSync(`rm -rf ${CLONE_DIR}`);
             }
         }
+    async deleteRbacResource(kind, name, namespace) {
+        try {
+            await this.initRepo();
+
+            if (!fs.existsSync(this.filePath)) {
+                console.log(`RBAC file ${this.filePath} does not exist.`);
+                return false;
+            }
+
+            const fileContent = fs.readFileSync(this.filePath, 'utf8');
+            let resources = yaml.loadAll(fileContent).filter(doc => doc !== null);
+
+            const initialLength = resources.length;
+            
+            // Filter out the resource to delete
+            resources = resources.filter(r => 
+                !(r.metadata.name === name && 
+                  r.kind === kind &&
+                  r.metadata.namespace === namespace)
+            );
+
+            if (resources.length === initialLength) {
+                console.log(`Resource ${name} of kind ${kind} not found in ${this.filePath}.`);
+                return false;
+            }
+
+            // Write back as multi-document YAML
+            const yamlContent = resources.map(r => yaml.dump(r)).join('---\n');
+            fs.writeFileSync(this.filePath, yamlContent);
+
+            // Commit and Push
+            execSync(`git add .`, { cwd: CLONE_DIR });
+            try {
+                execSync(`git commit -m "GitOps: Delete RBAC resource ${name} (${kind})"`, { cwd: CLONE_DIR });
+                execSync(`git push origin main`, { cwd: CLONE_DIR });
+                console.log(`Successfully deleted ${name} from Git.`);
+            } catch (commitErr) {
+                if (commitErr.stdout?.toString().includes("nothing to commit")) {
+                    console.log("No changes to commit.");
+                } else {
+                    throw commitErr;
+                }
+            }
+
+            return true;
+        } catch (error) {
+            console.error("GitOps Deletion Failed:", error.message);
+            throw error;
+        } finally {
+            if (fs.existsSync(CLONE_DIR)) {
+                execSync(`rm -rf ${CLONE_DIR}`);
+            }
+        }
     }
 }
 
