@@ -25,3 +25,17 @@ roleRef:
   kind: ClusterRole
   name: edit
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: abir-ben-nasr-edit-binding
+  namespace: argocd
+subjects:
+  - kind: User
+    name: ben.nasr.abir287@gmail.com
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: edit
+  apiGroup: rbac.authorization.k8s.io
