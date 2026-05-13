@@ -26,14 +26,6 @@ const ArgoCD = () => {
         }
     }, [isError, navigate]);
 
-    const handleRefresh = () => {
-        setIsLoading(true);
-        const iframe = document.getElementById('argocd-iframe');
-        if (iframe) {
-            iframe.src = iframe.src;
-        }
-    };
-
     return (
         <Layout>
             <Breadcrumb pageName="ArgoCD Interface" />
@@ -44,47 +36,40 @@ const ArgoCD = () => {
                         <h3 className="font-medium text-black dark:text-white">
                             Continuous Delivery Management
                         </h3>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleRefresh}
-                                className="inline-flex items-center justify-center gap-2.5 rounded-md border border-primary py-2 px-4 text-center font-medium text-primary hover:bg-opacity-90 lg:px-6 xl:px-8"
-                            >
-                                <FiRefreshCw className={isLoading ? "animate-spin" : ""} />
-                                Refresh
-                            </button>
-                            <a
-                                href={argoCDUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary py-2 px-4 text-center font-medium text-white hover:bg-opacity-90 lg:px-6 xl:px-8"
-                            >
-                                <FiExternalLink />
-                                Open Externally
-                            </a>
-                        </div>
                     </div>
 
-                    <div className="p-4 md:p-6 xl:p-9">
-                        <div className="relative w-full overflow-hidden rounded-xl border border-stroke dark:border-strokedark bg-gray-100 dark:bg-meta-4" style={{ height: 'calc(100vh - 350px)' }}>
-                            {isLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center z-10 bg-white dark:bg-boxdark bg-opacity-70 dark:bg-opacity-70">
-                                    <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
-                                </div>
-                            )}
-                            <iframe
-                                id="argocd-iframe"
-                                src={argoCDUrl}
-                                title="ArgoCD Interface"
-                                className="w-full h-full border-0"
-                                onLoad={() => setIsLoading(false)}
-                                onError={() => setIsLoading(false)}
-                            />
+                    <div className="p-4 md:p-6 xl:p-9 text-center">
+                        <div className="mb-6 flex justify-center">
+                            <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center">
+                                <FiExternalLink className="text-primary text-4xl" />
+                            </div>
+                        </div>
+                        
+                        <h4 className="text-xl font-bold text-black dark:text-white mb-4">
+                            External Authentication Required
+                        </h4>
+                        
+                        <div className="max-w-2xl mx-auto text-gray-600 dark:text-gray-400 mb-8 space-y-4">
+                            <p>
+                                To protect your session from <strong>Clickjacking attacks</strong>, your Single Sign-On Identity Provider (Keycloak/Dex) strictly prohibits embedding its login screen inside other applications.
+                            </p>
+                            <p>
+                                Because of these strict security measures, attempting to load ArgoCD inside this dashboard causes the authentication system to forcefully break out of the page. This interrupts your current session and forces you to log in again.
+                            </p>
+                            <p className="font-medium text-black dark:text-white">
+                                To ensure a stable and secure experience, please manage your cluster deployments by opening ArgoCD in a new, dedicated tab.
+                            </p>
                         </div>
 
-                        <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 italic">
-                            <p>ArgoCD has been configured for seamless access within this dashboard.</p>
-                            <p className="mt-1">If the interface does not load, click <strong>"Open Externally"</strong> to check the connection.</p>
-                        </div>
+                        <a
+                            href={argoCDUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2.5 rounded-md bg-primary py-3 px-8 text-center font-medium text-white hover:bg-opacity-90 shadow-md transition-all hover:scale-105"
+                        >
+                            <FiExternalLink className="text-xl" />
+                            Open ArgoCD Securely
+                        </a>
                     </div>
                 </div>
             </div>
