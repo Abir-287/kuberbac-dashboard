@@ -44,18 +44,12 @@ const ArgoCD = () => {
                                 <FiExternalLink className="text-primary text-4xl" />
                             </div>
                         </div>
-                        
+
                         <h4 className="text-xl font-bold text-black dark:text-white mb-4">
                             External Authentication Required
                         </h4>
-                        
+
                         <div className="max-w-2xl mx-auto text-gray-600 dark:text-gray-400 mb-8 space-y-4">
-                            <p>
-                                To protect your session from <strong>Clickjacking attacks</strong>, your Single Sign-On Identity Provider (Keycloak/Dex) strictly prohibits embedding its login screen inside other applications.
-                            </p>
-                            <p>
-                                Because of these strict security measures, attempting to load ArgoCD inside this dashboard causes the authentication system to forcefully break out of the page. This interrupts your current session and forces you to log in again.
-                            </p>
                             <p className="font-medium text-black dark:text-white">
                                 To ensure a stable and secure experience, please manage your cluster deployments by opening ArgoCD in a new, dedicated tab.
                             </p>
