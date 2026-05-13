@@ -152,14 +152,20 @@ const DataJabatan = () => {
     return (
         <Layout>
             <Breadcrumb pageName='Cluster Namespaces' />
-            <Link to="/namespaces-data/form-data-jabatan/add" >
-                <ButtonOne  >
-                    <span>Add Namespace</span>
-                    <span>
-                        <FaPlus />
-                    </span>
-                </ButtonOne>
-            </Link>
+            <div className="flex flex-wrap gap-4 mb-6">
+                <Link to="/namespaces-data/form-data-jabatan/add" >
+                    <ButtonOne  >
+                        <span>Add Namespace</span>
+                        <FaPlus className="ml-2" />
+                    </ButtonOne>
+                </Link>
+                <Link to="/namespaces/all/pods" >
+                    <button className='flex items-center justify-center gap-2 rounded-md bg-meta-3 py-3 px-6 text-center font-medium text-white hover:bg-opacity-90'>
+                        <span>View All Pods</span>
+                        <BiSearch className="text-xl" />
+                    </button>
+                </Link>
+            </div>
             <div className='rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1 mt-6'>
                 <div className="flex justify-between items-center mt-4 flex-col md:flex-row md:justify-between">
                     <div className="relative flex-2 mb-4 md:mb-0">

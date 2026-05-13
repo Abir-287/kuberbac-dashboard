@@ -20,4 +20,5 @@ if (process.env.KUBERNETES_SERVICE_HOST) {
 
 export const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 export const rbacApi = kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+export const k8sCustomApi = kc.makeApiClient(k8s.CustomObjectsApi);
 export default kc;

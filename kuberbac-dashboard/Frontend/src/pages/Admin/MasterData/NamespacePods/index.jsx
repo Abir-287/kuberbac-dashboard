@@ -45,7 +45,8 @@ const NamespacePods = () => {
         const fetchPods = async () => {
             setLoading(true);
             try {
-                const res = await axios.get(`/api/namespaces/${name}/pods`);
+                const url = name === 'all' ? '/api/pods/all' : `/api/namespaces/${name}/pods`;
+                const res = await axios.get(url, { withCredentials: true });
                 setPods(res.data);
             } catch (e) {
                 setError(e.response?.data?.msg || 'Failed to fetch pods');
@@ -66,7 +67,7 @@ const NamespacePods = () => {
 
     return (
         <Layout>
-            <Breadcrumb pageName={`Pods — ${name}`} />
+            <Breadcrumb pageName={name === 'all' ? "All Cluster Pods" : `Pods — ${name}`} />
 
             <Link
                 to="/namespaces-data"
@@ -88,7 +89,7 @@ const NamespacePods = () => {
                         <span className='absolute left-2 top-2.5 text-xl'><BiSearch /></span>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {filtered.length} pod{filtered.length !== 1 ? 's' : ''} in <strong>{name}</strong>
+                        {filtered.length} pod{filtered.length !== 1 ? 's' : ''} {name === 'all' ? 'across cluster' : `in ${name}`}
                     </span>
                 </div>
 

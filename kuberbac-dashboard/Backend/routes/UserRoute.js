@@ -2,7 +2,7 @@ import express from 'express';
 import { adminOnly, verifyUser } from '../middleware/AuthUser.js';
 import { Login, Me, LogOut, changePassword } from '../controllers/Auth.js';
 import { getUsers, getUserById, getUserByName, createUser, updateUser, deleteUser } from '../controllers/UserController.js';
-import { getNamespaces, getPodsInNamespace, createNamespace, deleteNamespace } from '../controllers/NamespaceController.js';
+import { getNamespaces, getPodsInNamespace, getAllPods, createNamespace, deleteNamespace } from '../controllers/NamespaceController.js';
 import {
     getRoleBindings,
     createRoleBinding,
@@ -34,6 +34,7 @@ router.get('/data_jabatan', verifyUser, adminOnly, getNamespaces);
 router.post('/data_jabatan', verifyUser, adminOnly, createNamespace);
 router.delete('/data_jabatan/:id', verifyUser, adminOnly, deleteNamespace);
 router.get('/namespaces/:name/pods', verifyUser, adminOnly, getPodsInNamespace);
+router.get('/pods/all', verifyUser, adminOnly, getAllPods);
 
 /* ==== RBAC Management ==== */
 router.get('/rbac/roles/:namespace', verifyUser, adminOnly, getAvailableRoles);

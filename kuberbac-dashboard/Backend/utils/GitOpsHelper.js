@@ -2,6 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
+import { k8sCustomApi } from '../config/K8sConfig.js';
 
 const REPO_URL = process.env.GITHUB_REPO; // e.g., Abir-287/kuberbac-dashboard
 const TOKEN = process.env.GITHUB_TOKEN;
@@ -14,6 +15,34 @@ class GitOpsHelper {
     constructor() {
         this.remoteUrl = `https://${USER}:${TOKEN}@github.com/${REPO_URL}.git`;
         this.filePath = path.join(CLONE_DIR, RBAC_PATH, FILE_NAME);
+    }
+
+    async forceArgoCDSync() {
+        try {
+            console.log("Forcing ArgoCD Sync via Kubernetes Patch...");
+            // Patch the Application resource in the argocd namespace
+            // argocd.argoproj.io/refresh: hard annotation triggers a sync
+            await k8sCustomApi.patchNamespacedCustomObject({
+                group: "argoproj.io",
+                version: "v1alpha1",
+                namespace: "argocd",
+                plural: "applications",
+                name: "rbac-dashboard",
+                body: {
+                    metadata: {
+                        annotations: {
+                            "argocd.argoproj.io/refresh": "hard"
+                        }
+                    }
+                }
+            }, {
+                headers: { 'Content-Type': 'application/merge-patch+json' }
+            });
+            console.log("ArgoCD Sync triggered successfully.");
+        } catch (error) {
+            console.error("Failed to trigger ArgoCD Sync:", error.message);
+            // Don't throw, Git push was already successful
+        }
     }
 
     async initRepo() {
@@ -68,6 +97,9 @@ class GitOpsHelper {
                 execSync(`git commit -m "GitOps: Update RBAC resource ${newResource.metadata.name} (${newResource.kind})"`, { cwd: CLONE_DIR });
                 execSync(`git push origin main`, { cwd: CLONE_DIR });
                 console.log(`Successfully pushed ${newResource.metadata.name} to Git.`);
+                
+                // Trigger ArgoCD Sync immediately
+                await this.forceArgoCDSync();
             } catch (commitErr) {
                 if (commitErr.stdout?.toString().includes("nothing to commit")) {
                     console.log("No changes to commit.");
@@ -123,6 +155,9 @@ class GitOpsHelper {
                 execSync(`git commit -m "GitOps: Delete RBAC resource ${name} (${kind})"`, { cwd: CLONE_DIR });
                 execSync(`git push origin main`, { cwd: CLONE_DIR });
                 console.log(`Successfully deleted ${name} from Git.`);
+
+                // Trigger ArgoCD Sync immediately
+                await this.forceArgoCDSync();
             } catch (commitErr) {
                 if (commitErr.stdout?.toString().includes("nothing to commit")) {
                     console.log("No changes to commit.");
