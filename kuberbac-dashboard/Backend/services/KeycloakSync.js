@@ -1,6 +1,5 @@
 import axios from 'axios';
 import DataPegawai from '../models/DataPegawaiModel.js';
-import DataJabatan from '../models/DataJabatanModel.js';
 import { Op } from 'sequelize';
 
 const KEYCLOAK_URL = "https://192.168.122.235:8443";
@@ -53,18 +52,10 @@ export const syncUsers = async () => {
         // Find Admin user ID to use as fallback for foreign keys
         const adminUser = await DataPegawai.findOne({ where: { username: 'admin' } });
         if (adminUser) {
-            // Re-assign any legacy DataJabatan records to admin before deleting their owners
+            // Re-assign any legacy records if needed (removed DataJabatan)
             const usersToDelete = await DataPegawai.findAll({
                 where: { username: { [Op.notIn]: keycloakUsernames } }
             });
-            const userIdsToDelete = usersToDelete.map(u => u.id);
-            
-            if (userIdsToDelete.length > 0) {
-                await DataJabatan.update(
-                    { userId: adminUser.id },
-                    { where: { userId: { [Op.in]: userIdsToDelete } } }
-                );
-            }
         }
 
         // 1. Delete users not in Keycloak
