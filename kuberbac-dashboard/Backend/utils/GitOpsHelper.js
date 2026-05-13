@@ -81,11 +81,12 @@ class GitOpsHelper {
             console.error("GitOps Update Failed:", error.message);
             throw error;
         } finally {
-            // Cleanup
             if (fs.existsSync(CLONE_DIR)) {
                 execSync(`rm -rf ${CLONE_DIR}`);
             }
         }
+    }
+
     async deleteRbacResource(kind, name, namespace) {
         try {
             await this.initRepo();
