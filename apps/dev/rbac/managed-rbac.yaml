@@ -86,3 +86,21 @@ roleRef:
   kind: ClusterRole
   name: view
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-viewer
+  namespace: abir
+rules:
+  - apiGroups:
+      - ''
+      - apps
+      - batch
+      - extensions
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
