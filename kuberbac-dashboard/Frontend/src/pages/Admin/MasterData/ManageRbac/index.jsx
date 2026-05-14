@@ -129,20 +129,8 @@ const ManageRbac = () => {
         }
     };
 
-    // Define the whitelist of "meaningful" roles
-    const usefulRolesWhitelist = [
-        'developer-access', 
-        'viewer-limited', 
-        'namespace-admin', 
-        'view', 
-        'edit', 
-        'admin', 
-        'cluster-admin'
-    ];
-
-    // Filter roles: strictly only show whitelisted ones
+    // Filter roles: Show all provided by backend, sorted alphabetically
     const filteredRoles = roles
-        .filter(r => usefulRolesWhitelist.includes(r.name))
         .sort((a, b) => a.name.localeCompare(b.name));
 
     return (

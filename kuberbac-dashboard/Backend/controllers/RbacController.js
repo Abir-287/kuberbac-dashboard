@@ -68,6 +68,7 @@ export const getAvailableRoles = async (req, res) => {
         const clusterRoleResponse = await rbacApi.listClusterRole();
         const commonRoles = ["admin", "edit", "view", "cluster-admin"];
         const clusterRoles = clusterRoleResponse.items
+            .filter(role => commonRoles.includes(role.metadata.name) || !role.metadata.name.startsWith("system:"))
             .map(role => ({ name: role.metadata.name, kind: 'ClusterRole' }));
 
         let namespacedRoles = [];
