@@ -91,8 +91,8 @@ jobs:
             git reset --hard origin/main
             
             # Re-apply the changes to the fresh state
-            sed -i "s|image: .*|image: abir287/kuberbac-backend:${{ github.sha }}|g" apps/dev/backend/deployment.yaml
-            sed -i "s|image: .*|image: abir287/kuberbac-frontend:${{ github.sha }}|g" apps/dev/frontend/deployment.yaml
+            sed -i "s|image: .*kuberbac-backend.*|image: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}|g" apps/dev/backend/deployment.yaml
+            sed -i "s|image: .*kuberbac-frontend.*|image: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|g" apps/dev/frontend/deployment.yaml
             
             git add apps/dev/backend/deployment.yaml apps/dev/frontend/deployment.yaml
             
