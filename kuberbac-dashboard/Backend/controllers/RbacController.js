@@ -7,9 +7,11 @@ export const getRoleBindings = async (req, res) => {
     const { namespace } = req.params;
     try {
         const response = await rbacApi.listNamespacedRoleBinding(namespace);
-        res.status(200).json(response.items);
+        const items = response.items || [];
+        res.status(200).json(items);
     } catch (error) {
-        res.status(500).json({ msg: error.message });
+        console.error(`Error fetching bindings for ${namespace}:`, error.message);
+        res.status(500).json({ msg: "Kubernetes API Error: " + error.message });
     }
 };
 

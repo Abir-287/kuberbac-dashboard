@@ -117,6 +117,12 @@ const ManageRbac = () => {
                     <h3 className='font-bold text-black dark:text-white'>Grant New Access</h3>
                 </div>
 
+                {error && (
+                    <div className="mb-4 bg-danger/10 border border-danger text-danger py-3 px-4 rounded-lg text-sm font-bold">
+                        Error: {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleAddBinding} className='flex flex-wrap gap-4 items-end mb-10 bg-gray-2 p-6 rounded-lg dark:bg-meta-4 border border-stroke dark:border-strokedark'>
                     <div className='min-w-[140px]'>
                         <label className='block text-sm font-semibold mb-2'>Target Type</label>
