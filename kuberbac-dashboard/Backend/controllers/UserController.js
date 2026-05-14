@@ -76,18 +76,18 @@ export const updateUser = async (req, res) => {
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     const { nama_pegawai, username, email, password, hak_akses, groups } = req.body;
-    let hashPassword;
-    if (!password || password.trim() === "") {
-        hashPassword = user.password;
-    } else {
-        hashPassword = await argon2.hash(password);
-    }
-
     try {
+        let hashPassword;
+        if (!password || password.trim() === "") {
+            hashPassword = user.password;
+        } else {
+            hashPassword = await argon2.hash(password);
+        }
+
         // 1. Update in Keycloak
         await updateKeycloakUser({ 
             nama_pegawai, 
-            username: user.username, // keep old username for lookup if changed in body? (usually not allowed)
+            username: user.username, 
             email, 
             password: password || null, 
             groups 
@@ -106,6 +106,7 @@ export const updateUser = async (req, res) => {
         });
         res.status(200).json({ msg: "User updated successfully in Dashboard and Keycloak" });
     } catch (error) {
+        console.error("Update User Error:", error.message);
         res.status(400).json({ msg: error.message });
     }
 };
