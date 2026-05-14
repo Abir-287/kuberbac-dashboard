@@ -86,7 +86,10 @@ export const createKeycloakUser = async (userData) => {
 
 export const updateKeycloakUser = async (userData) => {
     const token = await getAdminToken();
-    if (!token) throw new Error("Could not connect to Keycloak Admin API");
+    if (!token) {
+        console.error("Keycloak Sync: No admin token available");
+        return; // Don't throw, just log and skip to prevent crashing the main process
+    }
 
     try {
         // 1. Get the user's Keycloak ID
@@ -94,14 +97,17 @@ export const updateKeycloakUser = async (userData) => {
             headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (!usersRes.data || usersRes.data.length === 0) return;
+        if (!usersRes.data || usersRes.data.length === 0) {
+            console.warn(`Keycloak Sync: User ${userData.username} not found in Keycloak`);
+            return;
+        }
         const userId = usersRes.data[0].id;
 
         // 2. Update basic info
         const updateData = {
-            email: userData.email,
-            firstName: userData.nama_pegawai.split(' ')[0],
-            lastName: userData.nama_pegawai.split(' ').slice(1).join(' ') || ''
+            email: userData.email || usersRes.data[0].email,
+            firstName: userData.nama_pegawai ? userData.nama_pegawai.split(' ')[0] : usersRes.data[0].firstName,
+            lastName: userData.nama_pegawai ? userData.nama_pegawai.split(' ').slice(1).join(' ') : usersRes.data[0].lastName
         };
 
         await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}`, updateData, {
@@ -109,7 +115,7 @@ export const updateKeycloakUser = async (userData) => {
         });
 
         // 3. Update password if provided
-        if (userData.password) {
+        if (userData.password && userData.password.trim() !== "") {
             await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/reset-password`, {
                 type: "password",
                 value: userData.password,
@@ -121,29 +127,40 @@ export const updateKeycloakUser = async (userData) => {
 
         // 4. Update group if provided
         if (userData.groups) {
-            // First remove from all existing groups (simplification)
-            const currentGroups = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            for (const g of currentGroups.data) {
-                await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${g.id}`, {
+            try {
+                // First remove from all existing groups
+                const currentGroups = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-            }
+                
+                if (Array.isArray(currentGroups.data)) {
+                    for (const g of currentGroups.data) {
+                        await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${g.id}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                    }
+                }
 
-            // Then add to new group
-            const groupsRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/groups`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const group = groupsRes.data.find(g => g.name === userData.groups);
-            if (group) {
-                await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
+                // Then add to new group
+                const groupsRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/groups`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                
+                const targetGroupName = userData.groups.split(',')[0].trim(); // Take first group if multiple
+                const group = groupsRes.data.find(g => g.name === targetGroupName);
+                
+                if (group) {
+                    await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                }
+            } catch (groupError) {
+                console.error("Keycloak Group Update Error:", groupError.message);
             }
         }
     } catch (e) {
         console.error("Keycloak Update Error:", e.response?.data || e.message);
+        // Do not re-throw here to prevent crashing the calling controller
     }
 };
 
