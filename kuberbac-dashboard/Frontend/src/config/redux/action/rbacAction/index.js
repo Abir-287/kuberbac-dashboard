@@ -84,6 +84,23 @@ export const createRoleBinding = (namespace, data) => {
     };
 };
 
+export const getRoleBindings = (namespace) => {
+    return async (dispatch) => {
+        try {
+            const response = await axios.get(`${API_URL}/rbac/bindings/${namespace}`, { withCredentials: true });
+            dispatch({
+                type: GET_USER_PERMISSIONS_SUCCESS, // Reusing the same reducer state for simplicity
+                payload: response.data
+            });
+        } catch (error) {
+            dispatch({
+                type: GET_USER_PERMISSIONS_FAILURE,
+                payload: error.message
+            });
+        }
+    };
+};
+
 export const deleteRoleBinding = (namespace, name) => {
     return async (dispatch) => {
         try {
