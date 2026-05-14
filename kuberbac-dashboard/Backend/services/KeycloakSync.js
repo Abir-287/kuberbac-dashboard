@@ -45,6 +45,7 @@ export const createKeycloakUser = async (userData) => {
         await axios.post(`${KEYCLOAK_URL}/admin/realms/${REALM}/users`, {
             username: userData.username,
             email: userData.email,
+            emailVerified: true,
             enabled: true,
             firstName: userData.nama_pegawai.split(' ')[0],
             lastName: userData.nama_pegawai.split(' ').slice(1).join(' ') || '',
