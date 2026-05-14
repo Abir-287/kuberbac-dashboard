@@ -242,13 +242,6 @@ const DataJabatan = () => {
                                                 >
                                                     <BiSearch className="text-primary text-xl hover:text-black dark:hover:text-white" />
                                                 </Link>
-                                                <Link
-                                                    title="Manage RBAC"
-                                                    className='hover:text-black'
-                                                    to={`/namespaces-data/rbac/${data.id}`}
-                                                >
-                                                    <FiShield className="text-meta-3 text-xl hover:text-black dark:hover:text-white" />
-                                                </Link>
                                                 <button
                                                     onClick={() => onDeleteJabatan(data.id)}
                                                     className='hover:text-black'>
