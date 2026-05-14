@@ -1,5 +1,6 @@
 import DataPegawai from "../models/DataPegawaiModel.js";
 import argon2 from "argon2";
+import { createKeycloakUser } from "../services/KeycloakSync.js";
 
 // List Users
 export const getUsers = async (req, res) => {
@@ -41,6 +42,10 @@ export const getUserByName = async (req, res) => {
 export const createUser = async (req, res) => {
     const { nama_pegawai, username, email, password, hak_akses, groups } = req.body;
     try {
+        // 1. Create in Keycloak first
+        await createKeycloakUser({ nama_pegawai, username, email, password, groups });
+
+        // 2. Then create in local DB
         const hashPassword = await argon2.hash(password);
         await DataPegawai.create({
             nama_pegawai: nama_pegawai,

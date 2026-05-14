@@ -36,6 +36,53 @@ async function getUserGroups(userId, token) {
     }
 }
 
+export const createKeycloakUser = async (userData) => {
+    const token = await getAdminToken();
+    if (!token) throw new Error("Could not connect to Keycloak Admin API");
+
+    try {
+        // 1. Create the user
+        await axios.post(`${KEYCLOAK_URL}/admin/realms/${REALM}/users`, {
+            username: userData.username,
+            email: userData.email,
+            enabled: true,
+            firstName: userData.nama_pegawai.split(' ')[0],
+            lastName: userData.nama_pegawai.split(' ').slice(1).join(' ') || '',
+            credentials: [{
+                type: "password",
+                value: userData.password,
+                temporary: false
+            }]
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // 2. Get the new user's ID to assign groups
+        const usersRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${userData.username}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const userId = usersRes.data[0].id;
+
+        // 3. Assign to group if specified
+        if (userData.groups) {
+            // Find group ID
+            const groupsRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const group = groupsRes.data.find(g => g.name === userData.groups);
+            if (group) {
+                await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+        }
+        return userId;
+    } catch (e) {
+        console.error("Keycloak Creation Error:", e.response?.data || e.message);
+        throw new Error(e.response?.data?.errorMessage || "Failed to create user in Keycloak");
+    }
+};
+
 export const syncUsers = async () => {
     console.log("Starting Keycloak User Sync...");
     const token = await getAdminToken();
