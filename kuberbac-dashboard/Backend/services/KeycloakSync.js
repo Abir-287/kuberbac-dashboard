@@ -156,9 +156,10 @@ export const updateKeycloakUser = async (userData) => {
                 if (targetGroupName) {
                     const group = groupsRes.data.find(g => g.name === targetGroupName);
                     if (group) {
-                    await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                        await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                    }
                 }
             } catch (groupError) {
                 console.error("Keycloak Group Update Error:", groupError.message);

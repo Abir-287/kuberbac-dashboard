@@ -77,7 +77,7 @@ export const updateUser = async (req, res) => {
 
     const { nama_pegawai, username, email, password, hak_akses, groups } = req.body;
     let hashPassword;
-    if (password === "" || password === null) {
+    if (!password || password.trim() === "") {
         hashPassword = user.password;
     } else {
         hashPassword = await argon2.hash(password);
