@@ -80,6 +80,14 @@ const AppRoutes = () => {
         path='/change-password'
         element={<UbahPasswordAdmin />}
       />
+      <Route
+        path='/change-password-employee'
+        element={<UbahPasswordAdmin />}
+      />
+      <Route
+        path='/permissions'
+        element={<UserPermissions isUserView={true} />}
+      />
 
       {/* Route Not Found 404 */}
       <Route

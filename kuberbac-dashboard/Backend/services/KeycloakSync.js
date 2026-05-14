@@ -84,6 +84,88 @@ export const createKeycloakUser = async (userData) => {
     }
 };
 
+export const updateKeycloakUser = async (userData) => {
+    const token = await getAdminToken();
+    if (!token) throw new Error("Could not connect to Keycloak Admin API");
+
+    try {
+        // 1. Get the user's Keycloak ID
+        const usersRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${userData.username}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!usersRes.data || usersRes.data.length === 0) return;
+        const userId = usersRes.data[0].id;
+
+        // 2. Update basic info
+        const updateData = {
+            email: userData.email,
+            firstName: userData.nama_pegawai.split(' ')[0],
+            lastName: userData.nama_pegawai.split(' ').slice(1).join(' ') || ''
+        };
+
+        await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}`, updateData, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // 3. Update password if provided
+        if (userData.password) {
+            await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/reset-password`, {
+                type: "password",
+                value: userData.password,
+                temporary: false
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        }
+
+        // 4. Update group if provided
+        if (userData.groups) {
+            // First remove from all existing groups (simplification)
+            const currentGroups = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            for (const g of currentGroups.data) {
+                await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${g.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+
+            // Then add to new group
+            const groupsRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/groups`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const group = groupsRes.data.find(g => g.name === userData.groups);
+            if (group) {
+                await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Keycloak Update Error:", e.response?.data || e.message);
+    }
+};
+
+export const deleteKeycloakUser = async (username) => {
+    const token = await getAdminToken();
+    if (!token) return;
+
+    try {
+        const usersRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${username}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (usersRes.data && usersRes.data.length > 0) {
+            const userId = usersRes.data[0].id;
+            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        }
+    } catch (e) {
+        console.error("Keycloak Delete Error:", e.message);
+    }
+};
+
 export const syncUsers = async () => {
     console.log("Starting Keycloak User Sync...");
     const token = await getAdminToken();

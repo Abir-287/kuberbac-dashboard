@@ -15,9 +15,14 @@ import {
     getDataPegawai
 } from '../../../../config/redux/action';
 
-const UserPermissions = () => {
-    const { username } = useParams();
+const UserPermissions = ({ isUserView = false }) => {
+    const { username: paramUsername } = useParams();
     const dispatch = useDispatch();
+    const { isError, user } = useSelector((state) => state.auth);
+    
+    // If it's a user viewing their own permissions, use their auth username
+    const username = isUserView ? user?.username : paramUsername;
+
     const { userPermissions, namespaces, availableRoles } = useSelector((state) => state.rbac);
     const { dataPegawai } = useSelector((state) => state.dataPegawai);
     
@@ -101,12 +106,14 @@ const UserPermissions = () => {
         <Layout>
             <Breadcrumb pageName={`User Permissions: ${username}`} />
             
-            <Link 
-                to="/users-data"
-                className="inline-flex items-center gap-2 bg-danger text-white py-2 px-6 rounded-lg font-medium hover:bg-opacity-90 mb-6 transition"
-            >
-                <FaArrowLeft /> Back to Users
-            </Link>
+            {!isUserView && (
+                <Link 
+                    to="/users-data"
+                    className="inline-flex items-center gap-2 bg-danger text-white py-2 px-6 rounded-lg font-medium hover:bg-opacity-90 mb-6 transition"
+                >
+                    <FaArrowLeft /> Back to Users
+                </Link>
+            )}
             
             <div className='rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1'>
                 
@@ -122,48 +129,50 @@ const UserPermissions = () => {
                     </div>
                 </div>
 
-                {/* Add Permission Form */}
-                <form onSubmit={handleAddPermission} className='flex flex-wrap gap-4 items-end mb-8 bg-gray-2 p-6 rounded-lg dark:bg-meta-4 border border-stroke dark:border-strokedark'>
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-semibold mb-2'>Namespace</label>
-                        <select 
-                            value={selectedNamespace}
-                            onChange={(e) => setSelectedNamespace(e.target.value)}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark'
+                {/* Add Permission Form (Admin Only) */}
+                {!isUserView && (
+                    <form onSubmit={handleAddPermission} className='flex flex-wrap gap-4 items-end mb-8 bg-gray-2 p-6 rounded-lg dark:bg-meta-4 border border-stroke dark:border-strokedark'>
+                        <div className='flex-1 min-w-[200px]'>
+                            <label className='block text-sm font-semibold mb-2'>Namespace</label>
+                            <select 
+                                value={selectedNamespace}
+                                onChange={(e) => setSelectedNamespace(e.target.value)}
+                                className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark'
+                            >
+                                <option value="">Select Namespace</option>
+                                {namespaces.map(ns => (
+                                    <option key={ns} value={ns}>{ns}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className='flex-1 min-w-[200px]'>
+                            <label className='block text-sm font-semibold mb-2'>Role</label>
+                            <select 
+                                value={selectedRoleString}
+                                onChange={(e) => setSelectedRoleString(e.target.value)}
+                                disabled={!selectedNamespace}
+                                className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark disabled:opacity-50'
+                            >
+                                <option value="">Select Role</option>
+                                {availableRoles.map(r => {
+                                    const val = JSON.stringify(r);
+                                    return (
+                                        <option key={`${r.kind}-${r.name}`} value={val}>
+                                            {r.name} ({r.kind})
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                        <button 
+                            type="submit" 
+                            disabled={isLoading || !selectedRoleString}
+                            className='bg-primary text-white py-2.5 px-8 rounded-lg font-bold hover:bg-opacity-90 flex items-center gap-2 transition disabled:opacity-50'
                         >
-                            <option value="">Select Namespace</option>
-                            {namespaces.map(ns => (
-                                <option key={ns} value={ns}>{ns}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-semibold mb-2'>Role</label>
-                        <select 
-                            value={selectedRoleString}
-                            onChange={(e) => setSelectedRoleString(e.target.value)}
-                            disabled={!selectedNamespace}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark disabled:opacity-50'
-                        >
-                            <option value="">Select Role</option>
-                            {availableRoles.map(r => {
-                                const val = JSON.stringify(r);
-                                return (
-                                    <option key={`${r.kind}-${r.name}`} value={val}>
-                                        {r.name} ({r.kind})
-                                    </option>
-                                );
-                            })}
-                        </select>
-                    </div>
-                    <button 
-                        type="submit" 
-                        disabled={isLoading || !selectedRoleString}
-                        className='bg-primary text-white py-2.5 px-8 rounded-lg font-bold hover:bg-opacity-90 flex items-center gap-2 transition disabled:opacity-50'
-                    >
-                        <FaPlus /> Grant Permission
-                    </button>
-                </form>
+                            <FaPlus /> Grant Permission
+                        </button>
+                    </form>
+                )}
 
                 {/* Permissions Table */}
                 <h3 className='font-semibold text-black dark:text-white mb-4 mt-8 flex items-center gap-2'>
@@ -203,13 +212,18 @@ const UserPermissions = () => {
                                             <code className="text-xs bg-gray-2 dark:bg-meta-4 p-1 rounded">{p.bindingName}</code>
                                         </td>
                                         <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark text-center'>
-                                            <button 
-                                                onClick={() => handleDelete(p.namespace, p.bindingName)} 
-                                                className='text-danger hover:scale-110 transition p-2'
-                                                title="Revoke Permission"
-                                            >
-                                                <BsTrash3 className="text-lg" />
-                                            </button>
+                                            {!isUserView && (
+                                                <button 
+                                                    onClick={() => handleDelete(p.namespace, p.bindingName)} 
+                                                    className='text-danger hover:scale-110 transition p-2'
+                                                    title="Revoke Permission"
+                                                >
+                                                    <BsTrash3 className="text-lg" />
+                                                </button>
+                                            )}
+                                            {isUserView && (
+                                                <span className="text-xs text-gray-5 italic">View Only</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

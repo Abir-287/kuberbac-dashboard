@@ -1,6 +1,6 @@
 import DataPegawai from "../models/DataPegawaiModel.js";
 import argon2 from "argon2";
-import { createKeycloakUser } from "../services/KeycloakSync.js";
+import { createKeycloakUser, updateKeycloakUser, deleteKeycloakUser } from "../services/KeycloakSync.js";
 
 // List Users
 export const getUsers = async (req, res) => {
@@ -84,6 +84,16 @@ export const updateUser = async (req, res) => {
     }
 
     try {
+        // 1. Update in Keycloak
+        await updateKeycloakUser({ 
+            nama_pegawai, 
+            username: user.username, // keep old username for lookup if changed in body? (usually not allowed)
+            email, 
+            password: password || null, 
+            groups 
+        });
+
+        // 2. Update in Local DB
         await DataPegawai.update({
             nama_pegawai: nama_pegawai,
             username: username,
@@ -94,7 +104,7 @@ export const updateUser = async (req, res) => {
         }, {
             where: { id: user.id }
         });
-        res.status(200).json({ msg: "User updated successfully" });
+        res.status(200).json({ msg: "User updated successfully in Dashboard and Keycloak" });
     } catch (error) {
         res.status(400).json({ msg: error.message });
     }
@@ -107,10 +117,14 @@ export const deleteUser = async (req, res) => {
     });
     if (!user) return res.status(404).json({ msg: "User not found" });
     try {
+        // 1. Delete in Keycloak
+        await deleteKeycloakUser(user.username);
+
+        // 2. Delete in Local DB
         await DataPegawai.destroy({
             where: { id: user.id }
         });
-        res.status(200).json({ msg: "User deleted successfully" });
+        res.status(200).json({ msg: "User deleted successfully from Dashboard and Keycloak" });
     } catch (error) {
         res.status(400).json({ msg: error.message });
     }
