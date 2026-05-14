@@ -1,6 +1,7 @@
 import DataPegawai from "../models/DataPegawaiModel.js";
 import argon2 from "argon2";
 import { verifyUser } from "../middleware/AuthUser.js";
+import { updateKeycloakUser } from "../services/KeycloakSync.js";
 import fs from "fs";
 import https from "https";
 import axios from "axios";
@@ -167,39 +168,11 @@ export const changePassword = async (req, res) => {
   if (password !== confPassword) return res.status(400).json({ msg: "Password and Confirm Password do not match" });
 
   try {
-    // 1. Update in Keycloak
-    const KEYCLOAK_URL = "https://192.168.122.235:8443";
-    const REALM = "kubernetes";
-    const ADMIN_USER = "admin";
-    const ADMIN_PASS = "Admin123!";
-
-    // Get Admin Token
-    const params = new URLSearchParams();
-    params.append('client_id', 'admin-cli');
-    params.append('username', ADMIN_USER);
-    params.append('password', ADMIN_PASS);
-    params.append('grant_type', 'password');
-    
-    const tokenRes = await axios.post(`${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`, params);
-    const adminToken = tokenRes.data.access_token;
-
-    // Find User in Keycloak
-    const userRes = await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${user.username}`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+    // 1. Update in Keycloak using centralized service
+    await updateKeycloakUser({
+        username: user.username,
+        password: password
     });
-    
-    if (userRes.data && userRes.data.length > 0) {
-        const kcUserId = userRes.data[0].id;
-        
-        // Reset Password in Keycloak
-        await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${kcUserId}/reset-password`, {
-            type: "password",
-            value: password,
-            temporary: false
-        }, {
-            headers: { Authorization: `Bearer ${adminToken}` }
-        });
-    }
 
     // 2. Update in Local DB
     const hashPassword = await argon2.hash(password);
