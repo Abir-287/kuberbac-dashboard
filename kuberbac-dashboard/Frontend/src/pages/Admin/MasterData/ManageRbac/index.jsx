@@ -19,7 +19,7 @@ const ManageRbac = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     
-    const { userPermissions: bindings, availableRoles } = useSelector((state) => state.rbac);
+    const { userPermissions: bindings, availableRoles, error } = useSelector((state) => state.rbac);
     const { dataPegawai: users } = useSelector((state) => state.dataPegawai);
     
     // Binding form state
