@@ -77,11 +77,13 @@ jobs:
           sed -i "s|PLACEHOLDER_CERT|${TLS_CRT}|" apps/dev/tls-secret.yaml
           sed -i "s|PLACEHOLDER_KEY|${TLS_KEY}|" apps/dev/tls-secret.yaml
 
-      # ── Commit updated manifests → ArgoCD picks them up ─────────────────────
-      - name: Commit updated manifests
+      - name: Commit and push updated manifests
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps/dev/backend/deployment.yaml apps/dev/frontend/deployment.yaml apps/dev/tls-secret.yaml
-          git diff --staged --quiet && echo "No manifest changes" || \
-            git commit -m "ci: deploy images ${{ github.sha }}" && git push
+          if ! git diff --staged --quiet; then
+            git commit -m "ci: deploy images ${{ github.sha }}"
+            git pull --rebase origin main
+            git push origin main
+          fi
