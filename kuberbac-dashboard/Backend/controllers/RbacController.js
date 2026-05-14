@@ -128,34 +128,55 @@ export const getUserPermissions = async (req, res) => {
             where: { username: username }
         });
 
+        const userGroups = user?.groups ? user.groups.split(',').map(g => g.trim()) : [];
         const userEmail = user?.email || "";
-        const searchTerms = [username, userEmail].filter(t => t !== "");
+        const userIdentities = [username, userEmail].filter(t => t !== "");
 
+        // 1. Fetch Namespaced RoleBindings
         const rbResponse = await rbacApi.listRoleBindingForAllNamespaces();
         const roleBindings = rbResponse.items.filter(rb => 
-            rb.subjects && rb.subjects.some(s => searchTerms.includes(s.name))
+            rb.subjects && rb.subjects.some(s => 
+                (s.kind === 'User' && userIdentities.includes(s.name)) || 
+                (s.kind === 'Group' && userGroups.includes(s.name))
+            )
         ).map(rb => ({
             namespace: rb.metadata.namespace,
             roleName: rb.roleRef.name,
             bindingName: rb.metadata.name,
             kind: rb.roleRef.kind,
-            type: 'RoleBinding'
+            subjectName: rb.subjects.find(s => 
+                (s.kind === 'User' && userIdentities.includes(s.name)) || 
+                (s.kind === 'Group' && userGroups.includes(s.name))
+            )?.name
         }));
 
+        // 2. Fetch ClusterRoleBindings
         const crbResponse = await rbacApi.listClusterRoleBinding();
-        const clusterRoleBindings = crbResponse.items.filter(crb =>
-            crb.subjects && crb.subjects.some(s => searchTerms.includes(s.name))
+        const clusterBindings = crbResponse.items.filter(crb => 
+            crb.subjects && crb.subjects.some(s => 
+                (s.kind === 'User' && userIdentities.includes(s.name)) || 
+                (s.kind === 'Group' && userGroups.includes(s.name))
+            )
         ).map(crb => ({
             namespace: "All Namespaces (Cluster-wide)",
             roleName: crb.roleRef.name,
             bindingName: crb.metadata.name,
             kind: crb.roleRef.kind,
-            type: 'ClusterRoleBinding'
+            subjectName: crb.subjects.find(s => 
+                (s.kind === 'User' && userIdentities.includes(s.name)) || 
+                (s.kind === 'Group' && userGroups.includes(s.name))
+            )?.name
         }));
 
-        res.status(200).json([...roleBindings, ...clusterRoleBindings]);
+        // Combine and filter out potential "deprecated" or system bindings if necessary
+        const allPermissions = [...roleBindings, ...clusterBindings].filter(p => 
+            !p.bindingName.startsWith("system:") // Hide system-managed bindings to reduce noise
+        );
+
+        res.status(200).json(allPermissions);
     } catch (error) {
-        res.status(500).json({ msg: error.response?.body?.message || error.message });
+        console.error("Error fetching user permissions:", error.message);
+        res.status(500).json({ msg: error.message });
     }
 };
 

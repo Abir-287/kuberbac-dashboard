@@ -185,7 +185,7 @@ const UserPermissions = ({ isUserView = false }) => {
                             <tr className='bg-gray-2 text-left dark:bg-meta-4 border-b border-stroke dark:border-strokedark'>
                                 <th className='py-4 px-4 font-bold text-black dark:text-white'>Namespace</th>
                                 <th className='py-4 px-4 font-bold text-black dark:text-white'>Role</th>
-                                <th className='py-4 px-4 font-bold text-black dark:text-white'>Binding Name</th>
+                                <th className='py-4 px-4 font-bold text-black dark:text-white'>Assigned To</th>
                                 <th className='py-4 px-4 font-bold text-black dark:text-white text-center'>Action</th>
                             </tr>
                         </thead>
@@ -209,7 +209,10 @@ const UserPermissions = ({ isUserView = false }) => {
                                             </div>
                                         </td>
                                         <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                            <code className="text-xs bg-gray-2 dark:bg-meta-4 p-1 rounded">{p.bindingName}</code>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-black dark:text-white">{p.subjectName}</span>
+                                                <code className="text-[10px] bg-gray-2 dark:bg-meta-4 px-1 rounded w-fit">{p.bindingName}</code>
+                                            </div>
                                         </td>
                                         <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark text-center'>
                                             {!isUserView && (
