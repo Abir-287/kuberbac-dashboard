@@ -26,20 +26,26 @@ const UserPermissions = ({ isUserView = false }) => {
     const { userPermissions, namespaces, availableRoles } = useSelector((state) => state.rbac);
     const { dataPegawai } = useSelector((state) => state.dataPegawai);
     
-    // Find the current user in dataPegawai to show their full name/email
-    const currentUser = dataPegawai.find(u => u.username === username);
-    
+    // For view-only mode, we use the logged-in user's data directly from Auth state
+    // to avoid calling the restricted getDataPegawai (admin only) API.
+    const currentUser = isUserView ? user : dataPegawai.find(u => u.username === username);
+
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedNamespace, setSelectedNamespace] = useState('');
     const [selectedRoleString, setSelectedRoleString] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         dispatch(getUserPermissions(username));
-        dispatch(getNamespaces());
-        if (dataPegawai.length === 0) {
-            dispatch(getDataPegawai());
+        
+        // Only fetch administrative lists if we are in admin mode
+        if (!isUserView) {
+            dispatch(getNamespaces());
+            dispatch(getAvailableRoles());
+            if (dataPegawai.length === 0) {
+                dispatch(getDataPegawai());
+            }
         }
-    }, [dispatch, username, dataPegawai.length]);
+    }, [dispatch, username, isUserView, dataPegawai.length]);
 
     useEffect(() => {
         if (selectedNamespace) {

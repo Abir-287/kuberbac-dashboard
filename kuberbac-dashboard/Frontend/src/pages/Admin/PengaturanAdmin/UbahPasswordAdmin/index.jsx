@@ -60,10 +60,7 @@ const UbahPasswordAdmin = () => {
         if (isError) {
             navigate('/login');
         }
-        if (user && user.hak_akses !== 'admin') {
-            navigate('/dashboard');
-        }
-    }, [isError, user, navigate]);
+    }, [isError, navigate]);
 
     return (
         <Layout>
