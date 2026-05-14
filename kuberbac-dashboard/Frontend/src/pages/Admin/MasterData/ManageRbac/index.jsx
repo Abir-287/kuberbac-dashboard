@@ -1,86 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../../../layout';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import { Breadcrumb } from '../../../../components';
 import Swal from 'sweetalert2';
 import { BsTrash3 } from 'react-icons/bs';
-import { FaPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaArrowLeft, FaUsers, FaUser, FaFilter } from 'react-icons/fa';
+import { 
+    getAvailableRoles, 
+    createRoleBinding, 
+    deleteRoleBinding,
+    getDataPegawai,
+    getRoleBindings
+} from '../../../../config/redux/action';
 
 const ManageRbac = () => {
     const { id: namespace } = useParams();
     const navigate = useNavigate();
-    const [bindings, setBindings] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [roles, setRoles] = useState([]);
+    const dispatch = useDispatch();
+    
+    const { userPermissions: bindings, availableRoles } = useSelector((state) => state.rbac);
+    const { dataPegawai: users } = useSelector((state) => state.dataPegawai);
     
     // Binding form state
-    const [selectedUser, setSelectedUser] = useState('');
+    const [selectedSubject, setSelectedSubject] = useState('');
     const [selectedRoleString, setSelectedRoleString] = useState('');
     const [subjectKind, setSubjectKind] = useState('User'); // 'User' or 'Group'
     
-    // Filter state
+    // UI state
     const [filterGroup, setFilterGroup] = useState('All');
-    
-    // Custom Role form state
-    const [newRoleName, setNewRoleName] = useState('');
-    const [newRoleResources, setNewRoleResources] = useState('');
-    const [newRoleVerbs, setNewRoleVerbs] = useState('');
-    
     const [isLoading, setIsLoading] = useState(false);
 
-    const API_URL = '/api';
-
-    const fetchData = async () => {
-        try {
-            const [bindingsRes, usersRes, rolesRes] = await Promise.all([
-                axios.get(`${API_URL}/rbac/bindings/${namespace}`, { withCredentials: true }),
-                axios.get(`${API_URL}/data_pegawai`, { withCredentials: true }),
-                axios.get(`${API_URL}/rbac/roles/${namespace}`, { withCredentials: true })
-            ]);
-            setBindings(bindingsRes.data);
-            setUsers(usersRes.data);
-            setRoles(rolesRes.data);
-        } catch (error) {
-            console.error("Error fetching RBAC data:", error);
-            Swal.fire('Error', 'Failed to fetch RBAC data', 'error');
-        }
-    };
-
     useEffect(() => {
-        fetchData();
-    }, [namespace]);
+        dispatch(getRoleBindings(namespace));
+        dispatch(getAvailableRoles(namespace));
+        if (users.length === 0) {
+            dispatch(getDataPegawai());
+        }
+    }, [dispatch, namespace, users.length]);
 
     const handleAddBinding = async (e) => {
         e.preventDefault();
-        if (!selectedUser || !selectedRoleString) {
-            return Swal.fire('Error', 'Please select both a user and a role', 'error');
+        if (!selectedSubject || !selectedRoleString) {
+            return Swal.fire('Error', 'Please select both a target and a role', 'error');
         }
 
         const roleData = JSON.parse(selectedRoleString);
         
-        // Generate binding name using full name
-        const userObj = users.find(u => (u.email || u.username) === selectedUser);
-        let bindingName = "";
-        if (userObj && userObj.nama_pegawai) {
-            const safeName = userObj.nama_pegawai.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-            bindingName = `${safeName}-${roleData.name}-binding`;
-        }
+        // Generate binding name
+        const sanitizedSubject = selectedSubject.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        const bindingName = `${sanitizedSubject}-${roleData.name}-binding`;
 
         setIsLoading(true);
         try {
-            await axios.post(`${API_URL}/rbac/bindings/${namespace}`, {
-                username: selectedUser,
+            await dispatch(createRoleBinding(namespace, {
+                username: selectedSubject,
                 roleName: roleData.name,
                 roleKind: roleData.kind,
-                bindingName: bindingName || `${selectedUser.replace(/[^a-zA-Z0-9]/g, '-')}-${roleData.name}-binding`,
+                bindingName: bindingName,
                 subjectKind: subjectKind
-            }, { withCredentials: true });
+            }));
             
             Swal.fire('Success', 'Role assigned successfully', 'success');
-            setSelectedUser('');
+            setSelectedSubject('');
             setSelectedRoleString('');
-            fetchData();
+            dispatch(getRoleBindings(namespace));
         } catch (error) {
             Swal.fire('Error', error.response?.data?.msg || 'Failed to assign role', 'error');
         } finally {
@@ -88,36 +72,10 @@ const ManageRbac = () => {
         }
     };
 
-    const handleCreateRole = async (e) => {
-        e.preventDefault();
-        if (!newRoleName || !newRoleResources || !newRoleVerbs) {
-            return Swal.fire('Error', 'Please fill all fields to create a custom role', 'error');
-        }
-
-        setIsLoading(true);
-        try {
-            await axios.post(`${API_URL}/rbac/custom-roles/${namespace}`, {
-                roleName: newRoleName,
-                resources: newRoleResources,
-                verbs: newRoleVerbs
-            }, { withCredentials: true });
-            
-            Swal.fire('Success', 'Custom Role created successfully', 'success');
-            setNewRoleName('');
-            setNewRoleResources('');
-            setNewRoleVerbs('');
-            fetchData(); // Refresh roles list to include the new one
-        } catch (error) {
-            Swal.fire('Error', error.response?.data?.msg || 'Failed to create role', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleDeleteBinding = async (name) => {
+    const handleDelete = async (name) => {
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: `Remove this permission?`,
+            text: `Remove permission "${name}"?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, delete it!'
@@ -125,22 +83,24 @@ const ManageRbac = () => {
 
         if (result.isConfirmed) {
             try {
-                await axios.delete(`${API_URL}/rbac/bindings/${namespace}/${name}`, { withCredentials: true });
+                await dispatch(deleteRoleBinding(namespace, name));
                 Swal.fire('Deleted!', 'Permission removed.', 'success');
-                fetchData();
+                dispatch(getRoleBindings(namespace));
             } catch (error) {
-                Swal.fire('Error', 'Failed to delete binding', 'error');
+                Swal.fire('Error', 'Failed to delete permission', 'error');
             }
         }
     };
 
-    // Filter roles: Show all provided by backend, sorted alphabetically
-    const filteredRoles = roles
-        .sort((a, b) => a.name.localeCompare(b.name));
+    // Filter users list if subjectKind is User
+    const filteredUsers = users.filter(u => {
+        if (filterGroup === 'All') return true;
+        return u.groups?.includes(filterGroup);
+    });
 
     return (
         <Layout>
-            <Breadcrumb pageName={`Manage RBAC: ${namespace}`} />
+            <Breadcrumb pageName={`Namespace RBAC: ${namespace}`} />
             
             <Link 
                 to="/namespaces-data"
@@ -152,62 +112,82 @@ const ManageRbac = () => {
             <div className='rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1'>
                 
                 {/* 1. Add New Permission (RoleBinding) Form */}
-                <h3 className='font-medium text-black dark:text-white mb-4'>Assign Role to User or Group</h3>
-                <form onSubmit={handleAddBinding} className='flex flex-wrap gap-4 items-end mb-8 bg-gray-2 p-4 rounded-lg dark:bg-meta-4'>
-                    <div className='min-w-[120px]'>
-                        <label className='block text-sm font-medium mb-1'>Target Type</label>
-                        <select 
-                            value={subjectKind}
-                            onChange={(e) => {
-                                setSubjectKind(e.target.value);
-                                setSelectedUser('');
-                            }}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                        >
-                            <option value="User">User</option>
-                            <option value="Group">Group</option>
-                        </select>
+                <div className="flex items-center gap-2 mb-4">
+                    <FaPlus className="text-primary" />
+                    <h3 className='font-bold text-black dark:text-white'>Grant New Access</h3>
+                </div>
+
+                <form onSubmit={handleAddBinding} className='flex flex-wrap gap-4 items-end mb-10 bg-gray-2 p-6 rounded-lg dark:bg-meta-4 border border-stroke dark:border-strokedark'>
+                    <div className='min-w-[140px]'>
+                        <label className='block text-sm font-semibold mb-2'>Target Type</label>
+                        <div className="flex bg-white dark:bg-boxdark p-1 rounded-lg border border-stroke dark:border-strokedark">
+                            <button 
+                                type="button"
+                                onClick={() => { setSubjectKind('User'); setSelectedSubject(''); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-bold transition ${subjectKind === 'User' ? 'bg-primary text-white' : 'text-body hover:bg-gray'}`}
+                            >
+                                <FaUser /> User
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => { setSubjectKind('Group'); setSelectedSubject(''); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-md text-xs font-bold transition ${subjectKind === 'Group' ? 'bg-primary text-white' : 'text-body hover:bg-gray'}`}
+                            >
+                                <FaUsers /> Group
+                            </button>
+                        </div>
                     </div>
                     
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-medium mb-1'>
-                            {subjectKind === 'User' ? 'Select User' : 'Select Group'}
-                        </label>
-                        {subjectKind === 'User' ? (
-                            <select 
-                                value={selectedUser}
-                                onChange={(e) => setSelectedUser(e.target.value)}
-                                className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                            >
-                                <option value="">Select User</option>
-                                {users.map(u => (
+                    <div className='flex-1 min-w-[250px]'>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className='block text-sm font-semibold'>
+                                {subjectKind === 'User' ? 'Select Individual User' : 'Select Keycloak Group'}
+                            </label>
+                            {subjectKind === 'User' && (
+                                <select 
+                                    className="text-[10px] bg-transparent border-none outline-none text-primary font-bold cursor-pointer"
+                                    value={filterGroup}
+                                    onChange={(e) => setFilterGroup(e.target.value)}
+                                >
+                                    <option value="All">Filter Users: All</option>
+                                    <option value="cluster-admin">Filter: Admins</option>
+                                    <option value="devs">Filter: Devs</option>
+                                    <option value="viewers">Filter: Viewers</option>
+                                </select>
+                            )}
+                        </div>
+                        
+                        <select 
+                            value={selectedSubject}
+                            onChange={(e) => setSelectedSubject(e.target.value)}
+                            className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark'
+                        >
+                            <option value="">{subjectKind === 'User' ? 'Choose a user...' : 'Choose a group...'}</option>
+                            {subjectKind === 'User' ? (
+                                filteredUsers.map(u => (
                                     <option key={u.id} value={u.email || u.username}>
-                                        {u.nama_pegawai} ({u.email || u.username})
+                                        {u.nama_pegawai} ({u.username})
                                     </option>
-                                ))}
-                            </select>
-                        ) : (
-                            <select 
-                                value={selectedUser}
-                                onChange={(e) => setSelectedUser(e.target.value)}
-                                className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                            >
-                                <option value="">Select Group</option>
-                                <option value="cluster-admin">cluster-admin</option>
-                                <option value="devs">devs</option>
-                                <option value="viewers">viewers</option>
-                            </select>
-                        )}
+                                ))
+                            ) : (
+                                <>
+                                    <option value="cluster-admin">cluster-admin</option>
+                                    <option value="devs">devs</option>
+                                    <option value="viewers">viewers</option>
+                                </>
+                            )}
+                        </select>
                     </div>
+
                     <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-medium mb-1'>Role</label>
+                        <label className='block text-sm font-semibold mb-2'>Assign Role</label>
                         <select 
                             value={selectedRoleString}
                             onChange={(e) => setSelectedRoleString(e.target.value)}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
+                            className='w-full rounded-lg border-[1.5px] border-stroke bg-white py-2.5 px-4 outline-none focus:border-primary dark:border-strokedark dark:bg-boxdark'
                         >
-                            <option value="">Select Role</option>
-                            {filteredRoles.map(r => {
+                            <option value="">Choose a role...</option>
+                            {availableRoles.map(r => {
                                 const val = JSON.stringify(r);
                                 return (
                                     <option key={`${r.kind}-${r.name}`} value={val}>
@@ -217,137 +197,75 @@ const ManageRbac = () => {
                             })}
                         </select>
                     </div>
+
                     <button 
                         type="submit" 
-                        disabled={isLoading}
-                        className='bg-primary text-white py-2 px-6 rounded-lg font-medium hover:bg-opacity-90 flex items-center gap-2'
+                        disabled={isLoading || !selectedRoleString || !selectedSubject}
+                        className='bg-primary text-white py-2.5 px-8 rounded-lg font-bold hover:bg-opacity-90 flex items-center gap-2 transition disabled:opacity-50'
                     >
                         <FaPlus /> Assign
                     </button>
                 </form>
 
-                {/* 2. Create Custom Role Form */}
-                <h3 className='font-medium text-black dark:text-white mb-4'>Create Custom Role (Namespace Scope)</h3>
-                <form onSubmit={handleCreateRole} className='flex flex-wrap gap-4 items-end mb-8 border border-stroke p-4 rounded-lg dark:border-strokedark'>
-                    <div className='flex-1 min-w-[150px]'>
-                        <label className='block text-sm font-medium mb-1'>Role Name</label>
-                        <input 
-                            type="text"
-                            placeholder="e.g. log-viewer"
-                            value={newRoleName}
-                            onChange={(e) => setNewRoleName(e.target.value)}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                        />
-                    </div>
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-medium mb-1'>Resources (comma separated)</label>
-                        <input 
-                            type="text"
-                            placeholder="e.g. pods, deployments"
-                            value={newRoleResources}
-                            onChange={(e) => setNewRoleResources(e.target.value)}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                        />
-                    </div>
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-medium mb-1'>Verbs (comma separated)</label>
-                        <input 
-                            type="text"
-                            placeholder="e.g. get, list, watch"
-                            value={newRoleVerbs}
-                            onChange={(e) => setNewRoleVerbs(e.target.value)}
-                            className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
-                        />
-                    </div>
-                    <button 
-                        type="submit" 
-                        disabled={isLoading}
-                        className='bg-success text-white py-2 px-6 rounded-lg font-medium hover:bg-opacity-90 flex items-center gap-2'
-                    >
-                        <FaPlus /> Create Role
-                    </button>
-                </form>
-
-                {/* 3. Current Permissions Table */}
-                <div className='flex justify-between items-center mb-4 mt-8'>
-                    <h3 className='font-medium text-black dark:text-white'>Current Permissions (RoleBindings)</h3>
-                    <div className='flex items-center gap-2'>
-                        <label className='text-sm'>Filter by Group:</label>
-                        <select 
-                            value={filterGroup}
-                            onChange={(e) => setFilterGroup(e.target.value)}
-                            className='rounded border border-stroke py-1 px-2 text-sm outline-none dark:border-strokedark dark:bg-meta-4'
-                        >
-                            <option value="All">All Groups</option>
-                            <option value="cluster-admin">cluster-admin</option>
-                            <option value="devs">devs</option>
-                            <option value="viewers">viewers</option>
-                            <option value="None">Individual Users</option>
-                        </select>
+                {/* 2. Current Permissions Table */}
+                <div className="flex justify-between items-center mb-4 mt-8">
+                    <h3 className='font-bold text-black dark:text-white'>Active Namespace Permissions</h3>
+                    <div className="text-xs text-gray-5 flex items-center gap-2">
+                        <FaFilter />
+                        Showing {bindings.length} RoleBindings
                     </div>
                 </div>
-                <div className='max-w-full overflow-x-auto'>
+
+                <div className='max-w-full overflow-x-auto mb-6'>
                     <table className='w-full table-auto'>
                         <thead>
-                            <tr className='bg-gray-2 text-left dark:bg-meta-4'>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Binding Name</th>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Full Name</th>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Group</th>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Email</th>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Role Reference</th>
-                                <th className='py-4 px-4 font-medium text-black dark:text-white'>Action</th>
+                            <tr className='bg-gray-2 text-left dark:bg-meta-4 border-b border-stroke dark:border-strokedark'>
+                                <th className='py-4 px-4 font-bold text-black dark:text-white'>Subject (User/Group)</th>
+                                <th className='py-4 px-4 font-bold text-black dark:text-white'>Role Assigned</th>
+                                <th className='py-4 px-4 font-bold text-black dark:text-white'>Binding Name</th>
+                                <th className='py-4 px-4 font-bold text-black dark:text-white text-center'>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {bindings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className='text-center py-4'>No RoleBindings found in this namespace.</td>
+                                    <td colSpan="4" className='text-center py-10 text-gray-5'>No permissions found in this namespace.</td>
                                 </tr>
                             ) : (
-                                bindings
-                                    .filter(b => {
-                                        if (filterGroup === 'All') return true;
-                                        const subject = b.subjects?.[0];
-                                        if (filterGroup === 'None') return subject?.kind === 'User';
-                                        
-                                        // If filtering by a specific group
-                                        if (subject?.kind === 'Group') return subject.name === filterGroup;
-                                        
-                                        // If it's a user, check their group in our DB
-                                        const userObj = users.find(u => u.email === subject?.name || u.username === subject?.name);
-                                        return userObj && userObj.groups?.includes(filterGroup);
-                                    })
-                                    .map((b) => {
-                                    // Cross-reference K8s subjects with our Database users
-                                    const subjectName = b.subjects?.[0]?.name || '';
-                                    const userObj = users.find(u => u.email === subjectName || u.username === subjectName);
+                                bindings.map((b, index) => {
+                                    const subject = b.subjects?.[0];
+                                    const userObj = users.find(u => u.email === subject?.name || u.username === subject?.name);
                                     
-                                    const fullName = userObj ? userObj.nama_pegawai : (b.subjects?.[0]?.kind === 'Group' ? 'Group Assignment' : 'Unknown');
-                                    const group = userObj ? (userObj.groups || 'None') : (b.subjects?.[0]?.kind === 'Group' ? subjectName : 'None');
-                                    const email = userObj ? userObj.email : (b.subjects?.[0]?.kind === 'Group' ? '-' : subjectName);
-
                                     return (
-                                        <tr key={b.metadata.name}>
+                                        <tr key={index} className="hover:bg-gray dark:hover:bg-black/20 transition">
                                             <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                {b.metadata.name}
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-full ${subject?.kind === 'Group' ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'}`}>
+                                                        {subject?.kind === 'Group' ? <FaUsers /> : <FaUser />}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-black dark:text-white">
+                                                            {userObj ? userObj.nama_pegawai : subject?.name}
+                                                        </span>
+                                                        <span className="text-[10px] uppercase font-bold text-gray-5">{subject?.kind}</span>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                {fullName}
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-black dark:text-white">{b.roleRef.name}</span>
+                                                    <span className="text-xs text-gray-5">{b.roleRef.kind}</span>
+                                                </div>
                                             </td>
                                             <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                {group}
+                                                <code className="text-xs bg-gray-2 dark:bg-meta-4 p-1 rounded">{b.metadata.name}</code>
                                             </td>
-                                            <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                {email}
-                                            </td>
-                                            <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                <span className={b.roleRef.kind === 'ClusterRole' ? 'text-primary' : 'text-success'}>
-                                                    {b.roleRef.name} ({b.roleRef.kind})
-                                                </span>
-                                            </td>
-                                            <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
-                                                <button onClick={() => handleDeleteBinding(b.metadata.name)} className='text-danger'>
-                                                    <BsTrash3 />
+                                            <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark text-center'>
+                                                <button 
+                                                    onClick={() => handleDelete(b.metadata.name)} 
+                                                    className='text-danger hover:scale-110 transition p-2'
+                                                >
+                                                    <BsTrash3 className="text-lg" />
                                                 </button>
                                             </td>
                                         </tr>
