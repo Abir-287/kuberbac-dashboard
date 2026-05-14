@@ -6,7 +6,7 @@ import GitOpsHelper from "../utils/GitOpsHelper.js";
 export const getRoleBindings = async (req, res) => {
     const { namespace } = req.params;
     try {
-        const response = await rbacApi.listNamespacedRoleBinding({ namespace });
+        const response = await rbacApi.listNamespacedRoleBinding(namespace);
         res.status(200).json(response.items);
     } catch (error) {
         res.status(500).json({ msg: error.message });
@@ -74,7 +74,7 @@ export const getAvailableRoles = async (req, res) => {
 
         let namespacedRoles = [];
         try {
-            const roleResponse = await rbacApi.listNamespacedRole({ namespace });
+            const roleResponse = await rbacApi.listNamespacedRole(namespace);
             namespacedRoles = roleResponse.items.map(role => ({ name: role.metadata.name, kind: 'Role' }));
         } catch (e) {
             console.log(`Could not fetch namespaced roles for ${namespace}: ${e.message}`);
