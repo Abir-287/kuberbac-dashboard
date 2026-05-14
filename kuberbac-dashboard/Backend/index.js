@@ -67,8 +67,8 @@ app.use(express.json());
 app.use(FileUpload());
 app.use(express.static("public"));
 
-app.use(UserRoute);
-app.use(AuthRoute);
+app.use(['/api', '/'], UserRoute);
+app.use(['/api', '/'], AuthRoute);
 
 // Kubernetes health check endpoint
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
