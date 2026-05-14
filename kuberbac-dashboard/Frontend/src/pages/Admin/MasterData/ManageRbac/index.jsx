@@ -17,6 +17,10 @@ const ManageRbac = () => {
     // Binding form state
     const [selectedUser, setSelectedUser] = useState('');
     const [selectedRoleString, setSelectedRoleString] = useState('');
+    const [subjectKind, setSubjectKind] = useState('User'); // 'User' or 'Group'
+    
+    // Filter state
+    const [filterGroup, setFilterGroup] = useState('All');
     
     // Custom Role form state
     const [newRoleName, setNewRoleName] = useState('');
@@ -69,7 +73,8 @@ const ManageRbac = () => {
                 username: selectedUser,
                 roleName: roleData.name,
                 roleKind: roleData.kind,
-                bindingName: bindingName
+                bindingName: bindingName || `${selectedUser.replace(/[^a-zA-Z0-9]/g, '-')}-${roleData.name}-binding`,
+                subjectKind: subjectKind
             }, { withCredentials: true });
             
             Swal.fire('Success', 'Role assigned successfully', 'success');
@@ -147,22 +152,52 @@ const ManageRbac = () => {
             <div className='rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1'>
                 
                 {/* 1. Add New Permission (RoleBinding) Form */}
-                <h3 className='font-medium text-black dark:text-white mb-4'>Assign Role to User</h3>
+                <h3 className='font-medium text-black dark:text-white mb-4'>Assign Role to User or Group</h3>
                 <form onSubmit={handleAddBinding} className='flex flex-wrap gap-4 items-end mb-8 bg-gray-2 p-4 rounded-lg dark:bg-meta-4'>
-                    <div className='flex-1 min-w-[200px]'>
-                        <label className='block text-sm font-medium mb-1'>User</label>
+                    <div className='min-w-[120px]'>
+                        <label className='block text-sm font-medium mb-1'>Target Type</label>
                         <select 
-                            value={selectedUser}
-                            onChange={(e) => setSelectedUser(e.target.value)}
+                            value={subjectKind}
+                            onChange={(e) => {
+                                setSubjectKind(e.target.value);
+                                setSelectedUser('');
+                            }}
                             className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
                         >
-                            <option value="">Select User</option>
-                            {users.map(u => (
-                                <option key={u.id} value={u.email || u.username}>
-                                    {u.nama_pegawai} ({u.email || u.username})
-                                </option>
-                            ))}
+                            <option value="User">User</option>
+                            <option value="Group">Group</option>
                         </select>
+                    </div>
+                    
+                    <div className='flex-1 min-w-[200px]'>
+                        <label className='block text-sm font-medium mb-1'>
+                            {subjectKind === 'User' ? 'Select User' : 'Select Group'}
+                        </label>
+                        {subjectKind === 'User' ? (
+                            <select 
+                                value={selectedUser}
+                                onChange={(e) => setSelectedUser(e.target.value)}
+                                className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
+                            >
+                                <option value="">Select User</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.email || u.username}>
+                                        {u.nama_pegawai} ({u.email || u.username})
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <select 
+                                value={selectedUser}
+                                onChange={(e) => setSelectedUser(e.target.value)}
+                                className='w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-2 px-3 outline-none focus:border-primary'
+                            >
+                                <option value="">Select Group</option>
+                                <option value="cluster-admin">cluster-admin</option>
+                                <option value="devs">devs</option>
+                                <option value="viewers">viewers</option>
+                            </select>
+                        )}
                     </div>
                     <div className='flex-1 min-w-[200px]'>
                         <label className='block text-sm font-medium mb-1'>Role</label>
@@ -234,7 +269,23 @@ const ManageRbac = () => {
                 </form>
 
                 {/* 3. Current Permissions Table */}
-                <h3 className='font-medium text-black dark:text-white mb-4 mt-8'>Current Permissions (RoleBindings)</h3>
+                <div className='flex justify-between items-center mb-4 mt-8'>
+                    <h3 className='font-medium text-black dark:text-white'>Current Permissions (RoleBindings)</h3>
+                    <div className='flex items-center gap-2'>
+                        <label className='text-sm'>Filter by Group:</label>
+                        <select 
+                            value={filterGroup}
+                            onChange={(e) => setFilterGroup(e.target.value)}
+                            className='rounded border border-stroke py-1 px-2 text-sm outline-none dark:border-strokedark dark:bg-meta-4'
+                        >
+                            <option value="All">All Groups</option>
+                            <option value="cluster-admin">cluster-admin</option>
+                            <option value="devs">devs</option>
+                            <option value="viewers">viewers</option>
+                            <option value="None">Individual Users</option>
+                        </select>
+                    </div>
+                </div>
                 <div className='max-w-full overflow-x-auto'>
                     <table className='w-full table-auto'>
                         <thead>
@@ -253,7 +304,20 @@ const ManageRbac = () => {
                                     <td colSpan="6" className='text-center py-4'>No RoleBindings found in this namespace.</td>
                                 </tr>
                             ) : (
-                                bindings.map((b) => {
+                                bindings
+                                    .filter(b => {
+                                        if (filterGroup === 'All') return true;
+                                        const subject = b.subjects?.[0];
+                                        if (filterGroup === 'None') return subject?.kind === 'User';
+                                        
+                                        // If filtering by a specific group
+                                        if (subject?.kind === 'Group') return subject.name === filterGroup;
+                                        
+                                        // If it's a user, check their group in our DB
+                                        const userObj = users.find(u => u.email === subject?.name || u.username === subject?.name);
+                                        return userObj && userObj.groups?.includes(filterGroup);
+                                    })
+                                    .map((b) => {
                                     // Cross-reference K8s subjects with our Database users
                                     const subjectName = b.subjects?.[0]?.name || '';
                                     const userObj = users.find(u => u.email === subjectName || u.username === subjectName);

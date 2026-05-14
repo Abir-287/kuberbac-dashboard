@@ -16,21 +16,22 @@ export const getRoleBindings = async (req, res) => {
 // Create a RoleBinding via GitOps
 export const createRoleBinding = async (req, res) => {
     const { namespace } = req.params;
-    const { username, roleName, roleKind, bindingName } = req.body;
+    const { username, roleName, roleKind, bindingName, subjectKind } = req.body;
     
     try {
-        const sanitizedUser = username.replace(/[@.]/g, '-').toLowerCase();
+        const finalKind = subjectKind || 'User';
+        const sanitizedSubject = username.replace(/[@.]/g, '-').toLowerCase();
         
         const resource = {
             apiVersion: 'rbac.authorization.k8s.io/v1',
             kind: 'RoleBinding',
             metadata: { 
-                name: bindingName || `${sanitizedUser}-${roleName}-binding`,
+                name: bindingName || `${sanitizedSubject}-${roleName}-binding`,
                 namespace: namespace 
             },
             subjects: [{
-                kind: 'User',
-                name: username,
+                kind: finalKind,
+                name: username, // The name is the group name or user email
                 apiGroup: 'rbac.authorization.k8s.io'
             }],
             roleRef: {
