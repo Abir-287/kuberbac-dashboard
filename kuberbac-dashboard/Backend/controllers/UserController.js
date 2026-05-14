@@ -39,15 +39,15 @@ export const getUserByName = async (req, res) => {
 
 // Create User
 export const createUser = async (req, res) => {
-    const { name, username, email, password, role, groups } = req.body;
+    const { nama_pegawai, username, email, password, hak_akses, groups } = req.body;
     try {
         const hashPassword = await argon2.hash(password);
         await DataPegawai.create({
-            nama_pegawai: name,
+            nama_pegawai: nama_pegawai,
             username: username,
             email: email,
             password: hashPassword,
-            hak_akses: role,
+            hak_akses: hak_akses,
             groups: groups,
             // Legacy defaults
             nik: "MANUAL-" + Math.floor(Math.random() * 1000000),
@@ -70,7 +70,7 @@ export const updateUser = async (req, res) => {
     });
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    const { name, username, email, password, role, groups } = req.body;
+    const { nama_pegawai, username, email, password, hak_akses, groups } = req.body;
     let hashPassword;
     if (password === "" || password === null) {
         hashPassword = user.password;
@@ -80,11 +80,11 @@ export const updateUser = async (req, res) => {
 
     try {
         await DataPegawai.update({
-            nama_pegawai: name,
+            nama_pegawai: nama_pegawai,
             username: username,
             email: email,
             password: hashPassword,
-            hak_akses: role,
+            hak_akses: hak_akses,
             groups: groups
         }, {
             where: { id: user.id }
