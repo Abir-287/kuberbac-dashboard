@@ -146,10 +146,16 @@ export const updateKeycloakUser = async (userData) => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 
-                const targetGroupName = userData.groups.split(',')[0].trim(); // Take first group if multiple
-                const group = groupsRes.data.find(g => g.name === targetGroupName);
+                let targetGroupName = "";
+                if (typeof userData.groups === 'string') {
+                    targetGroupName = userData.groups.split(',')[0].trim();
+                } else if (Array.isArray(userData.groups) && userData.groups.length > 0) {
+                    targetGroupName = userData.groups[0];
+                }
                 
-                if (group) {
+                if (targetGroupName) {
+                    const group = groupsRes.data.find(g => g.name === targetGroupName);
+                    if (group) {
                     await axios.put(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/groups/${group.id}`, {}, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
