@@ -78,16 +78,39 @@ jobs:
           sed -i "s|PLACEHOLDER_CERT|${TLS_CRT}|" apps/dev/tls-secret.yaml
           sed -i "s|PLACEHOLDER_KEY|${TLS_KEY}|" apps/dev/tls-secret.yaml
 
-      - name: Commit and push updated manifests
+      - name: Commit and Push updated manifests
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/dev/backend/deployment.yaml apps/dev/frontend/deployment.yaml apps/dev/tls-secret.yaml
-          if ! git diff --staged --quiet; then
-            git commit -m "ci: deploy images ${{ github.sha }}"
-            # Robust pull/rebase/push loop
-            git pull --rebase origin main
-            git push origin main
-          else
-            echo "No changes to commit"
-          fi
+          
+          # Use a loop to handle potential push rejections/conflicts
+          for i in {1..5}; do
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            
+            # Re-apply the changes to the fresh state
+            sed -i "s|image: .*|image: abir287/kuberbac-backend:${{ github.sha }}|g" apps/dev/backend/deployment.yaml
+            sed -i "s|image: .*|image: abir287/kuberbac-frontend:${{ github.sha }}|g" apps/dev/frontend/deployment.yaml
+            
+            git add apps/dev/backend/deployment.yaml apps/dev/frontend/deployment.yaml
+            
+            # Only commit if there are changes
+            if git diff-index --quiet HEAD; then
+              echo "No changes to commit"
+              exit 0
+            fi
+            
+            git commit -m "ci: deploy images ${{ github.sha }} [attempt $i]"
+            
+            if git push origin main; then
+              echo "Successfully pushed updated manifests"
+              exit 0
+            fi
+            
+            echo "Push failed, retrying in 5 seconds..."
+            sleep 5
+          done
+          
+          echo "Failed to push after 5 attempts"
+          exit 1
