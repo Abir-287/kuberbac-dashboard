@@ -13,6 +13,15 @@ import { syncUsers } from './services/KeycloakSync.js';
 
 const app = express();
 
+// --- GLOBAL SAFETY NET ---
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});
+// -------------------------
+
 // Start Keycloak Sync
 syncUsers();
 setInterval(syncUsers, 5 * 60 * 1000); // Every 5 minutes
