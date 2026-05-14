@@ -215,9 +215,9 @@ const DataJabatan = () => {
                                         </td>
                                         <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
                                             <Link
-                                                to={`/namespaces/${data.id}/pods`}
+                                                to={`/namespaces-data/rbac/${data.id}`}
                                                 className='text-primary hover:underline font-medium'
-                                                title="View pods in this namespace"
+                                                title="Manage RBAC for this namespace"
                                             >
                                                 {data.nama_jabatan}
                                             </Link>
@@ -235,6 +235,13 @@ const DataJabatan = () => {
                                         </td>
                                         <td className='border-b border-[#eee] py-5 px-4 dark:border-strokedark'>
                                             <div className='flex items-center space-x-3.5'>
+                                                <Link
+                                                    title="View Pods"
+                                                    className='hover:text-black'
+                                                    to={`/namespaces/${data.id}/pods`}
+                                                >
+                                                    <BiSearch className="text-primary text-xl hover:text-black dark:hover:text-white" />
+                                                </Link>
                                                 <Link
                                                     title="Manage RBAC"
                                                     className='hover:text-black'
