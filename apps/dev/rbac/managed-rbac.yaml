@@ -174,17 +174,3 @@ roleRef:
   kind: ClusterRole
   name: view
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: ben-nasr-abir287-gmail-com-view-binding
-  namespace: test
-subjects:
-  - kind: User
-    name: ben.nasr.abir287@gmail.com
-    apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: ClusterRole
-  name: view
-  apiGroup: rbac.authorization.k8s.io
