@@ -63,15 +63,29 @@ export const createRoleBinding = async (req, res) => {
     }
 };
 
-// Delete a RoleBinding via GitOps
+// Delete a RoleBinding via GitOps + immediate cluster delete
 export const deleteRoleBinding = async (req, res) => {
     const { namespace, name } = req.params;
     try {
-        // Pure GitOps: Only update GitHub, let ArgoCD handle cluster deletion
-        await GitOpsHelper.deleteRbacResource('RoleBinding', name, namespace);
-        res.status(200).json({ msg: "RoleBinding deletion submitted to GitOps. ArgoCD will sync it shortly." });
+        // 1. Delete directly from cluster for immediate UI effect
+        try {
+            await rbacApi.deleteNamespacedRoleBinding({ name, namespace });
+            console.log(`Deleted RoleBinding ${name} from cluster directly.`);
+        } catch (clusterErr) {
+            // If it doesn't exist in the cluster (e.g. already gone), that's OK
+            if (clusterErr?.response?.statusCode !== 404) {
+                console.warn(`Direct cluster delete warning: ${clusterErr.message}`);
+            }
+        }
+
+        // 2. Update Git asynchronously — don't block the response
+        GitOpsHelper.deleteRbacResource('RoleBinding', name, namespace)
+            .then(() => console.log(`GitOps: removed ${name} from managed-rbac.yaml`))
+            .catch(e => console.error(`GitOps delete failed (cluster already updated): ${e.message}`));
+
+        res.status(200).json({ msg: "RoleBinding deleted from cluster. GitOps sync in progress." });
     } catch (error) {
-        res.status(500).json({ msg: "GitOps Delete Error: " + error.message });
+        res.status(500).json({ msg: "Delete Error: " + error.message });
     }
 };
 
