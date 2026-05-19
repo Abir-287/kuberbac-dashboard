@@ -1,8 +1,11 @@
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import util from 'util';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { k8sCustomApi } from '../config/K8sConfig.js';
+
+const execAsync = util.promisify(exec);
 
 const REPO_URL = process.env.GITHUB_REPO; // e.g., Abir-287/kuberbac-dashboard
 const TOKEN = process.env.GITHUB_TOKEN;
@@ -47,14 +50,14 @@ class GitOpsHelper {
 
     async initRepo() {
         if (fs.existsSync(CLONE_DIR)) {
-            execSync(`rm -rf ${CLONE_DIR}`);
+            await execAsync(`rm -rf ${CLONE_DIR}`);
         }
         console.log(`Cloning ${REPO_URL}...`);
-        execSync(`git clone ${this.remoteUrl} ${CLONE_DIR}`);
+        await execAsync(`git clone ${this.remoteUrl} ${CLONE_DIR}`);
         
         // Configure git user
-        execSync(`git config --global user.email "dashboard-bot@kuberbac.local"`, { cwd: CLONE_DIR });
-        execSync(`git config --global user.name "Kuberbac Dashboard Bot"`, { cwd: CLONE_DIR });
+        await execAsync(`git config --global user.email "dashboard-bot@kuberbac.local"`, { cwd: CLONE_DIR });
+        await execAsync(`git config --global user.name "Kuberbac Dashboard Bot"`, { cwd: CLONE_DIR });
     }
 
     async updateRbacFile(newResource) {
@@ -92,16 +95,16 @@ class GitOpsHelper {
             fs.writeFileSync(this.filePath, yamlContent);
 
             // Commit and Push
-            execSync(`git add .`, { cwd: CLONE_DIR });
+            await execAsync(`git add .`, { cwd: CLONE_DIR });
             try {
-                execSync(`git commit -m "GitOps: Update RBAC resource ${newResource.metadata.name} (${newResource.kind})"`, { cwd: CLONE_DIR });
-                execSync(`git push origin main`, { cwd: CLONE_DIR });
+                await execAsync(`git commit -m "GitOps: Update RBAC resource ${newResource.metadata.name} (${newResource.kind})"`, { cwd: CLONE_DIR });
+                await execAsync(`git push origin main`, { cwd: CLONE_DIR });
                 console.log(`Successfully pushed ${newResource.metadata.name} to Git.`);
                 
                 // Trigger ArgoCD Sync immediately
                 await this.forceArgoCDSync();
             } catch (commitErr) {
-                if (commitErr.stdout?.toString().includes("nothing to commit")) {
+                if (commitErr.stdout?.toString().includes("nothing to commit") || commitErr.message?.includes("nothing to commit")) {
                     console.log("No changes to commit.");
                 } else {
                     throw commitErr;
@@ -114,7 +117,7 @@ class GitOpsHelper {
             throw error;
         } finally {
             if (fs.existsSync(CLONE_DIR)) {
-                execSync(`rm -rf ${CLONE_DIR}`);
+                await execAsync(`rm -rf ${CLONE_DIR}`).catch(() => {});
             }
         }
     }
@@ -150,16 +153,16 @@ class GitOpsHelper {
             fs.writeFileSync(this.filePath, yamlContent);
 
             // Commit and Push
-            execSync(`git add .`, { cwd: CLONE_DIR });
+            await execAsync(`git add .`, { cwd: CLONE_DIR });
             try {
-                execSync(`git commit -m "GitOps: Delete RBAC resource ${name} (${kind})"`, { cwd: CLONE_DIR });
-                execSync(`git push origin main`, { cwd: CLONE_DIR });
+                await execAsync(`git commit -m "GitOps: Delete RBAC resource ${name} (${kind})"`, { cwd: CLONE_DIR });
+                await execAsync(`git push origin main`, { cwd: CLONE_DIR });
                 console.log(`Successfully deleted ${name} from Git.`);
 
                 // Trigger ArgoCD Sync immediately
                 await this.forceArgoCDSync();
             } catch (commitErr) {
-                if (commitErr.stdout?.toString().includes("nothing to commit")) {
+                if (commitErr.stdout?.toString().includes("nothing to commit") || commitErr.message?.includes("nothing to commit")) {
                     console.log("No changes to commit.");
                 } else {
                     throw commitErr;
@@ -172,7 +175,7 @@ class GitOpsHelper {
             throw error;
         } finally {
             if (fs.existsSync(CLONE_DIR)) {
-                execSync(`rm -rf ${CLONE_DIR}`);
+                await execAsync(`rm -rf ${CLONE_DIR}`).catch(() => {});
             }
         }
     }
