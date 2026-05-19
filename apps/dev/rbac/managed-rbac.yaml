@@ -202,17 +202,3 @@ roleRef:
   kind: ClusterRole
   name: view
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: aldi-example-com-pod-viewer-binding
-  namespace: abir
-subjects:
-  - kind: User
-    name: aldi@example.com
-    apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: Role
-  name: pod-viewer
-  apiGroup: rbac.authorization.k8s.io
