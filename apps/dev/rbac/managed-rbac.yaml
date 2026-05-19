@@ -150,20 +150,6 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: cluster-admin-edit-binding
-  namespace: developer-ns
-subjects:
-  - kind: Group
-    name: cluster-admin
-    apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: ClusterRole
-  name: edit
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
   name: admin-edit-binding
   namespace: argocd
 subjects:
