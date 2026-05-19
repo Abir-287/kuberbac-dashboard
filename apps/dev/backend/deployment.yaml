@@ -25,7 +25,7 @@ spec:
         kubernetes.io/hostname: worker1
       containers:
         - name: backend
-          image: ghcr.io/abir-287/kuberbac-backend:356800dd86175391ca87ff23cc728f3ab232c29f
+          image: ghcr.io/abir-287/kuberbac-backend:9c9814c80dce2c68a7a9d91dba0c624856fd153d
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
