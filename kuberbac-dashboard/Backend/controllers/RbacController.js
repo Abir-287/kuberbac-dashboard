@@ -22,7 +22,18 @@ export const createRoleBinding = async (req, res) => {
     
     try {
         const finalKind = subjectKind || 'User';
-        const sanitizedSubject = username.replace(/[@.]/g, '-').toLowerCase();
+        
+        let subjectName = username;
+        if (finalKind === 'User') {
+            const user = await DataPegawai.findOne({
+                where: { username: username }
+            });
+            if (user && user.email) {
+                subjectName = user.email;
+            }
+        }
+        
+        const sanitizedSubject = subjectName.replace(/[@.]/g, '-').toLowerCase();
         
         const resource = {
             apiVersion: 'rbac.authorization.k8s.io/v1',
@@ -33,7 +44,7 @@ export const createRoleBinding = async (req, res) => {
             },
             subjects: [{
                 kind: finalKind,
-                name: username, // The name is the group name or user email
+                name: subjectName, // The name is the group name or user email
                 apiGroup: 'rbac.authorization.k8s.io'
             }],
             roleRef: {
@@ -139,16 +150,19 @@ export const getUserPermissions = async (req, res) => {
                 (s.kind === 'User' && userIdentities.includes(s.name)) || 
                 (s.kind === 'Group' && userGroups.includes(s.name))
             )
-        ).map(rb => ({
-            namespace: rb.metadata.namespace,
-            roleName: rb.roleRef.name,
-            bindingName: rb.metadata.name,
-            kind: rb.roleRef.kind,
-            subjectName: rb.subjects.find(s => 
+        ).map(rb => {
+            const matchedSubject = rb.subjects.find(s => 
                 (s.kind === 'User' && userIdentities.includes(s.name)) || 
                 (s.kind === 'Group' && userGroups.includes(s.name))
-            )?.name
-        }));
+            );
+            return {
+                namespace: rb.metadata.namespace,
+                roleName: rb.roleRef.name,
+                bindingName: rb.metadata.name,
+                kind: rb.roleRef.kind,
+                subjectName: matchedSubject?.kind === 'User' ? (userEmail || matchedSubject.name) : matchedSubject?.name
+            };
+        });
 
         // 2. Fetch ClusterRoleBindings
         const crbResponse = await rbacApi.listClusterRoleBinding();
@@ -157,16 +171,19 @@ export const getUserPermissions = async (req, res) => {
                 (s.kind === 'User' && userIdentities.includes(s.name)) || 
                 (s.kind === 'Group' && userGroups.includes(s.name))
             )
-        ).map(crb => ({
-            namespace: "All Namespaces (Cluster-wide)",
-            roleName: crb.roleRef.name,
-            bindingName: crb.metadata.name,
-            kind: crb.roleRef.kind,
-            subjectName: crb.subjects.find(s => 
+        ).map(crb => {
+            const matchedSubject = crb.subjects.find(s => 
                 (s.kind === 'User' && userIdentities.includes(s.name)) || 
                 (s.kind === 'Group' && userGroups.includes(s.name))
-            )?.name
-        }));
+            );
+            return {
+                namespace: "All Namespaces (Cluster-wide)",
+                roleName: crb.roleRef.name,
+                bindingName: crb.metadata.name,
+                kind: crb.roleRef.kind,
+                subjectName: matchedSubject?.kind === 'User' ? (userEmail || matchedSubject.name) : matchedSubject?.name
+            };
+        });
 
         // Combine and filter out potential "deprecated" or system bindings if necessary
         const allPermissions = [...roleBindings, ...clusterBindings].filter(p => 

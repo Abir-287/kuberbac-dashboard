@@ -28,15 +28,15 @@ class GitOpsHelper {
                 namespace: "argocd",
                 plural: "applications",
                 name: "rbac-dashboard",
-                body: {
-                    metadata: {
-                        annotations: {
-                            "argocd.argoproj.io/refresh": "hard"
-                        }
+                body: [
+                    {
+                        op: "replace",
+                        path: "/metadata/annotations/argocd.argoproj.io~1refresh",
+                        value: "hard"
                     }
-                }
+                ]
             }, {
-                headers: { 'Content-Type': 'application/merge-patch+json' }
+                headers: { 'Content-Type': 'application/json-patch+json' }
             });
             console.log("ArgoCD Sync triggered successfully.");
         } catch (error) {

@@ -61,8 +61,9 @@ const UserPermissions = ({ isUserView = false }) => {
 
         const roleData = JSON.parse(selectedRoleString);
         
-        // Generate a binding name
-        const sanitizedUser = username.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        // Generate a binding name using email if available, fallback to username
+        const identity = currentUser?.email || username;
+        const sanitizedUser = identity.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
         const bindingName = `${sanitizedUser}-${roleData.name}-binding`;
 
         setIsLoading(true);
