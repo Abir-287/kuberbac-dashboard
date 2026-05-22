@@ -7,4 +7,6 @@ mern-employee-salary-management/scratch/
 
 # Logs
 *.log
-apps/dev/backend/secret.yaml
+
+# CLI tools — download separately from github.com/bitnami-labs/sealed-secrets/releases
+kubeseal
