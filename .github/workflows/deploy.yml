@@ -72,14 +72,6 @@ jobs:
           sed -i "s|image: .*kuberbac-frontend.*|image: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|" \
             apps/dev/frontend/deployment.yaml
 
-      # ── Inject TLS secret into tls-secret.yaml ───────────────────────────────
-      - name: Inject TLS cert into manifest
-        run: |
-          TLS_CRT=$(echo "${{ secrets.INGRESS_TLS_CERT }}" | base64 -w0)
-          TLS_KEY=$(echo "${{ secrets.INGRESS_TLS_KEY }}" | base64 -w0)
-          sed -i "s|PLACEHOLDER_CERT|${TLS_CRT}|" apps/dev/tls-secret.yaml
-          sed -i "s|PLACEHOLDER_KEY|${TLS_KEY}|" apps/dev/tls-secret.yaml
-
       - name: Commit and Push updated manifests
         run: |
           git config user.name "github-actions[bot]"
